@@ -128,10 +128,11 @@ Visit [http://localhost:8000](http://localhost:8000) to see a welcoming homepage
 
 ## 📸 Screenshots
 
-<!--
- ![image](https://github.com/user-attachments/assets/6399dad4-a54a-4927-ad23-618b4d63f148)
- ![image](https://github.com/user-attachments/assets/2c075413-dba0-4a5a-a813-838138547791)
--->
+ ### Home Page ("/")
+ ![Home Page](https://github.com/user-attachments/assets/6399dad4-a54a-4927-ad23-618b4d63f148)
+
+### API JSON Output ("/api/animes")
+ ![API JSON Output](https://github.com/user-attachments/assets/2c075413-dba0-4a5a-a813-838138547791)
 
 ---
 
