@@ -17,7 +17,7 @@ import (
 )
 
 func FindAnimeByName(name string) (*model.Anime, error) {
-	collection := config.Collection // Ensure this matches your database collection name
+	collection := config.Collection 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -52,7 +52,6 @@ func SearchAnimeByName(name string) (*model.Anime, error) {
 	return &anime, nil
 }
 
-// InsertOneAnime inserts a new anime document into MongoDB.
 func InsertOneAnime(anime model.Anime) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -66,30 +65,27 @@ func InsertOneAnime(anime model.Anime) error {
 	return nil
 }
 
-// UpdateAnime performs a generic partial update on any fields provided in the JSON body.
 func UpdateAnime(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 	idStr := params["id"]
 
-	// Convert the string ID to an ObjectID.
+
 	objectID, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 
-	// Decode request body into a map.
+	
 	var updates map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Remove _id if present to prevent overwriting the document's ID.
 	delete(updates, "_id")
 
-	// Construct the update query using $set.
 	filter := bson.M{"_id": objectID}
 	update := bson.M{"$set": updates}
 
@@ -107,7 +103,7 @@ func UpdateAnime(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println("Successfully updated anime:", idStr)
-	// Respond with the update result.
+	
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"matched":  result.MatchedCount,
 		"modified": result.ModifiedCount,
@@ -115,7 +111,7 @@ func UpdateAnime(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// DeleteOneAnime deletes a single anime by ID.
+
 func DeleteOneAnime(animeId string) {
 	id, err := primitive.ObjectIDFromHex(animeId)
 	if err != nil {
@@ -132,7 +128,7 @@ func DeleteOneAnime(animeId string) {
 	fmt.Println("Anime deleted with count:", result.DeletedCount)
 }
 
-// DeleteAllAnime deletes all anime records from the collection.
+
 func DeleteAllAnime() int64 {
 	deleteResult, err := config.Collection.DeleteMany(context.Background(), bson.D{{}})
 	if err != nil {
@@ -143,7 +139,6 @@ func DeleteAllAnime() int64 {
 	return deleteResult.DeletedCount
 }
 
-// GetAllAnimes retrieves all anime documents.
 func GetAllAnimes() []primitive.M {
 	cur, err := config.Collection.Find(context.Background(), bson.D{{}})
 	if err != nil {
