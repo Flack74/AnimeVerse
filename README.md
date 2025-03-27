@@ -1,4 +1,4 @@
-# 🎬 AnimeVerse
+#  AnimeVerse
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Flack74/AnimeApi) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -13,6 +13,7 @@ Welcome to **AnimeVerse** – your one-stop RESTful API for managing and explori
 - **MongoDB Integration:** Secure and scalable storage with MongoDB.
 - **RESTful Design:** Clean and intuitive endpoints.
 - **Detailed Data:** Manage anime with fields like name, type, score, progress, status, and genre.
+- **No Duplication:** Prevents duplicate anime entries.
 
 ---
 
@@ -85,6 +86,12 @@ Visit [http://localhost:8000](http://localhost:8000) to see a welcoming homepage
   curl http://localhost:8000/api/animes
   ```
 
+- **Get an Anime by Name:**
+
+  ```bash
+  curl http://localhost:8000/api/anime/{animeName}
+  ```
+
 - **Update an Anime (Partial Update):**
 
   ```bash
@@ -114,11 +121,12 @@ Visit [http://localhost:8000](http://localhost:8000) to see a welcoming homepage
 
 ---
 
-## 🛠 API Endpoints
+## 🖼️ API Endpoints
 
 | Method | Endpoint                  | Description                              |
 | ------ | ------------------------- | ---------------------------------------- |
 | GET    | `/api/animes`             | Retrieve all anime records               |
+| GET    | `/api/anime/{animeName}`  | Retrieve a specific anime by name        |
 | POST   | `/api/anime`              | Create a new anime record                |
 | PUT    | `/api/anime/{id}`         | Update an anime record (partial update)  |
 | DELETE | `/api/anime/{id}`         | Delete a specific anime record           |
@@ -151,10 +159,40 @@ Contributions are always welcome! If you have ideas, suggestions, or improvement
 
 ---
 
-## 📄 License
+## 📝 Future Improvements for AnimeVerse API
+
+### Bulk Anime Insertion (Planned Feature)
+
+#### Overview
+A potential enhancement for AnimeVerse API is adding support for bulk anime insertion. This would allow users to submit an array of anime data in a single API request, improving efficiency when adding multiple entries.
+
+#### Proposed Route
+
+- **Endpoint:** `POST /api/addmultipleanimes`
+- **Request Body:** An array of anime JSON objects, e.g.,
+  ```json
+  [
+    {"name": "Attack on Titan", "genre": "Action", "episodes": 75},
+    {"name": "Demon Slayer", "genre": "Adventure", "episodes": 26}
+  ]
+  ```
+- **Response:**
+  - **Success:** Returns inserted anime details.
+  - **Failure:** Returns an error message for invalid or duplicate entries.
+
+#### Considerations
+- **MongoDB Free Tier Limitations:** The free plan has a 512MB storage limit, so bulk insertion must be optimized.
+- **Duplicate Handling:** Implement logic to prevent inserting duplicate anime based on name.
+- **Abuse Prevention:** Consider adding rate limiting or authentication to prevent excessive API calls.
+- **Performance Optimization:** Using MongoDB’s InsertMany function would be more efficient than inserting each entry individually.
+
+---
+
+## 📜 License
 
 This project is licensed under the [MIT License](LICENSE).
 
 ---
 
-Made with ❤️ by Flack 
+Made with ❤️ by Flack
+
