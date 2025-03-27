@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// GetMyAllAnimes handles GET /api/animes.
+
 func GetMyAllAnimesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	allAnimes := services.GetAllAnimes()
@@ -23,11 +23,9 @@ func GetAnimeByNameHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	animeName := vars["animeName"]
 
-	// Normalize the anime name (replace '-' and '_' with spaces)
 	animeName = strings.ReplaceAll(animeName, "-", " ")
 	animeName = strings.ReplaceAll(animeName, "_", " ")
 
-	// Convert to lowercase for case-insensitive search
 	animeName = strings.ToLower(animeName)
 
 	existingAnime, err := services.SearchAnimeByName(animeName)
@@ -39,7 +37,6 @@ func GetAnimeByNameHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(existingAnime)
 }
 
-// CreateAnime handles POST /api/anime.
 func CreateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -70,13 +67,10 @@ func CreateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(anime)
 }
 
-// UpdateAnime handler is used for PUT /api/anime/{id}.
-// It updates the document with any fields provided in the request body.
 func UpdateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	services.UpdateAnime(w, r)
 }
 
-// DeleteAnAnime handles DELETE /api/anime/{id}.
 func DeleteAnAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
@@ -84,14 +78,12 @@ func DeleteAnAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"deleted": params["id"]})
 }
 
-// DeleteEveryAnimes handles DELETE /api/deleteallanime.
 func DeleteEveryAnimesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	count := services.DeleteAllAnime()
 	json.NewEncoder(w).Encode(map[string]int64{"deleted_count": count})
 }
 
-// ServeHome serves the home page.
 func ServeHomeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`
 		<!DOCTYPE html>
