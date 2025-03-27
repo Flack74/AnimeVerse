@@ -34,6 +34,6 @@ type Anime struct {
 		Watched int `json:"watched,omitempty"` // Episodes watched
 		Total   int `json:"total,omitempty"`   // Total episodes (0 if unknown)
 	} `json:"progress,omitempty"`
-	Status WatchStatus `json:"status,omitempty"` // User's watching status
-	Genre  []string    `json:"genre,omitempty"`  // User-defined tags (e.g., "action", "isekai", "romance")
+	Status WatchStatus `json:"status,omitempty"` // watching status
+	Genre  []string    `json:"genre,omitempty"`  // Genre tags (e.g., "action", "isekai", "romance")
 }
