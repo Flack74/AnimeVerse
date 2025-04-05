@@ -188,22 +188,27 @@ A potential enhancement for AnimeVerse API is adding support for bulk anime inse
 
 ---
 
-🐳 Docker Support
-AnimeVerse now supports Docker for easy containerized deployment!
+## 🐳 Docker Support
 
-1. Build the Docker Image
-docker build -t animeverse-api .
+AnimeVerse supports Docker for both **development** and **production** environments using multi-stage builds.
 
-2. Run the Container
-Make sure your MongoDB instance is running and accessible. Then:
+### For **Development**:
 
-docker run --env-file .env -p 8000:8000 animeverse-api
+```bash
+docker build --target dev -t animeverse-dev .
+docker run -p 8000:8000 -v $(pwd):/app animeverse-dev
+```
 
-3. Example .env for Docker
-ConnectionString=mongodb://host.docker.internal:27017
-DBName=anime
-CollectionName=watchlist
+#### 🔹 For **Production**:
 
+```bash
+docker build -t animeverse-prod .
+docker run -p 8000:8000 animeverse-prod
+```
+
+> Make sure you’ve configured your `.env` properly and MongoDB is accessible.
+
+---
 
 ## 📜 License
 
