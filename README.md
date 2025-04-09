@@ -1,220 +1,200 @@
-#  AnimeVerse
+# AnimeVerse
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Flack74/AnimeApi) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-Welcome to **AnimeVerse** – your one-stop RESTful API for managing and exploring your favorite anime collection! Built with **Go**, **MongoDB**, and **Gorilla Mux**, this API lets you create, read, update, and delete anime records with ease. Whether you're a casual fan or a hardcore otaku, Anime API has got you covered! 🎉
 
----
+**AnimeVerse** is a RESTful API for managing and exploring your anime collection. Built with **Go**, **MongoDB**, and **Gorilla Mux**, it provides clean CRUD endpoints, partial updates, and robust duplicate prevention—perfect for casual watchers and hardcore otaku alike! 🎉
+
 
 ## 🚀 Features
 
-- **CRUD Operations:** Create, Read, Update, and Delete anime records effortlessly.
-- **Partial Updates:** Send a JSON payload with only the fields you need to update.
-- **MongoDB Integration:** Secure and scalable storage with MongoDB.
-- **RESTful Design:** Clean and intuitive endpoints.
-- **Detailed Data:** Manage anime with fields like name, type, score, progress, status, and genre.
-- **No Duplication:** Prevents duplicate anime entries.
+- **CRUD Operations**: Create, Read, Update, Delete anime records.  
+- **Partial Updates**: Send only the fields you need to change.  
+- **MongoDB Integration**: Secure, scalable storage.  
+- **RESTful Endpoints**: Clean URL design.  
+- **Rich Data Model**: Fields for `name`, `type`, `score`, `progress`, `status`, and `tags`.  
+- **Duplicate Prevention**: No repeated entries by name.
 
 ---
 
 ## 📥 Installation
 
-1. **Clone the Repository:**
-
+1. **Clone the repo**  
    ```bash
    git clone https://github.com/Flack74/AnimeVerse.git
    cd AnimeVerse
    ```
 
-2. **Install Dependencies:**
-
-   Make sure you have [Go](https://golang.org/) installed. Then, run:
-
+2. **Install Go modules**  
    ```bash
    go mod tidy
    ```
 
-3. **Configure Environment Variables:**
-
-   Create a `.env` file in the root directory with the following (adjust as needed):
-
-   ```env
-   ConnectionString=mongodb://<username>:<password>@localhost:27017
-   DBName=anime
-   CollectionName=watchlist
-   ```
-
-4. **Run the Application:**
-
+3. **Configure environment** (see below).  
+4. **Run locally**  
    ```bash
    go run main.go
    ```
+   The API will be available at `http://localhost:8000`.
 
-   The API will be available at [http://localhost:8000](http://localhost:8000) 🎉
+---
+
+## ⚙️ Configuration
+
+Create a `.env` file in the project root:
+
+```env
+ConnectionString=mongodb://<username>:<password>@localhost:27017
+DBName=anime
+CollectionName=watchlist
+```
+
+> **Tip:** Never commit your `.env` to version control.
 
 ---
 
 ## ⚙️ Usage
 
-### **Home Page**
+### Home Page
 
-Visit [http://localhost:8000](http://localhost:8000) to see a welcoming homepage.
+Open your browser to:
 
-### **API Requests**
+```
+http://localhost:8000
+```
 
-- **Create an Anime:**
+You’ll see a friendly welcome message.
 
+### API Endpoints
+
+| Method | Endpoint                  | Description                              |
+| :----- | :------------------------ | :--------------------------------------- |
+| **GET**    | `/api/animes`             | List all anime records                   |
+| **GET**    | `/api/anime/{name}`       | Get one anime by **name**                |
+| **POST**   | `/api/anime`              | Create a new anime                       |
+| **PUT**    | `/api/anime/{id}`         | Partially update an anime by **ID**      |
+| **DELETE** | `/api/anime/{id}`         | Delete one anime by **ID**               |
+| **DELETE** | `/api/deleteallanime`     | Delete _all_ anime records               |
+
+#### Examples
+
+- **Create**  
   ```bash
   curl -X POST http://localhost:8000/api/anime \
     -H "Content-Type: application/json" \
     -d '{
-          "name": "My Hero Academia",
-          "type": "TV",
-          "score": 9,
-          "progress": {
-              "watched": 25,
-              "total": 88
-          },
-          "status": "watching",
-          "tags": ["action", "shounen", "superhero"]
-        }'
+      "name": "My Hero Academia",
+      "type": "TV",
+      "score": 9,
+      "progress": {"watched": 25, "total": 88},
+      "status": "watching",
+      "tags": ["action","shounen","superhero"]
+    }'
   ```
 
-- **Get All Anime:**
-
+- **Read All**  
   ```bash
   curl http://localhost:8000/api/animes
   ```
 
-- **Get an Anime by Name:**
-
+- **Update**  
   ```bash
-  curl http://localhost:8000/api/anime/{animeName}
-  ```
-
-- **Update an Anime (Partial Update):**
-
-  ```bash
-  curl -X PUT http://localhost:8000/api/anime/{id} \
+  curl -X PUT http://localhost:8000/api/anime/60c72b2f5f1b2c0015e4d3a7 \
     -H "Content-Type: application/json" \
-    -d '{
-          "score": 10,
-          "progress": {
-              "watched": 88,
-              "total": 88
-          },
-          "status": "completed"
-        }'
+    -d '{"score": 10, "status": "completed"}'
   ```
 
-- **Delete an Anime:**
-
+- **Delete**  
   ```bash
-  curl -X DELETE http://localhost:8000/api/anime/{id}
+  curl -X DELETE http://localhost:8000/api/anime/60c72b2f5f1b2c0015e4d3a7
   ```
-
-- **Delete All Anime:**
-
-  ```bash
-  curl -X DELETE http://localhost:8000/api/deleteallanime
-  ```
-
----
-
-## 🖼️ API Endpoints
-
-| Method | Endpoint                  | Description                              |
-| ------ | ------------------------- | ---------------------------------------- |
-| GET    | `/api/animes`             | Retrieve all anime records               |
-| GET    | `/api/anime/{animeName}`  | Retrieve a specific anime by name        |
-| POST   | `/api/anime`              | Create a new anime record                |
-| PUT    | `/api/anime/{id}`         | Update an anime record (partial update)  |
-| DELETE | `/api/anime/{id}`         | Delete a specific anime record           |
-| DELETE | `/api/deleteallanime`     | Delete all anime records                 |
 
 ---
 
 ## 📸 Screenshots
 
- ### Home Page ("/")
- ![Home Page](https://github.com/user-attachments/assets/6399dad4-a54a-4927-ad23-618b4d63f148)
+Home Page  
+![Home Page](https://github.com/user-attachments/assets/6399dad4-a54a-4927-ad23-618b4d63f148)
 
-### API JSON Output ("/api/animes")
- ![API JSON Output](https://github.com/user-attachments/assets/2c075413-dba0-4a5a-a813-838138547791)
+API JSON Output  
+![API JSON Output](https://github.com/user-attachments/assets/2c075413-dba0-4a5a-a813-838138547791)
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are always welcome! If you have ideas, suggestions, or improvements, please follow these steps:
+1. **Fork** the repo  
+2. **Create** a feature branch  
+   ```bash
+   git checkout -b feature/YourFeature
+   ```
+3. **Commit** your changes  
+   ```bash
+   git commit -m "Add YourFeature"
+   ```
+4. **Push** to your branch  
+   ```bash
+   git push origin feature/YourFeature
+   ```
+5. **Open** a Pull Request  
 
-1. **Fork the Repository**
-2. **Create a Feature Branch:**  
-   `git checkout -b feature/your-feature`
-3. **Commit Your Changes:**  
-   `git commit -am 'Add some feature'`
-4. **Push to the Branch:**  
-   `git push origin feature/your-feature`
-5. **Open a Pull Request**
+Please follow conventional commits and maintain test coverage.
 
 ---
 
-## 📝 Future Improvements for AnimeVerse API
+## 📝 Future Improvements
 
-### Bulk Anime Insertion (Planned Feature)
-
-#### Overview
-A potential enhancement for AnimeVerse API is adding support for bulk anime insertion. This would allow users to submit an array of anime data in a single API request, improving efficiency when adding multiple entries.
-
-#### Proposed Route
-
-- **Endpoint:** `POST /api/addmultipleanimes`
-- **Request Body:** An array of anime JSON objects, e.g.,
-  ```json
-  [
-    {"name": "Attack on Titan", "genre": "Action", "episodes": 75},
-    {"name": "Demon Slayer", "genre": "Adventure", "episodes": 26}
-  ]
-  ```
-- **Response:**
-  - **Success:** Returns inserted anime details.
-  - **Failure:** Returns an error message for invalid or duplicate entries.
-
-#### Considerations
-- **MongoDB Free Tier Limitations:** The free plan has a 512MB storage limit, so bulk insertion must be optimized.
-- **Duplicate Handling:** Implement logic to prevent inserting duplicate anime based on name.
-- **Abuse Prevention:** Consider adding rate limiting or authentication to prevent excessive API calls.
-- **Performance Optimization:** Using MongoDB’s InsertMany function would be more efficient than inserting each entry individually.
+- **Bulk Insertion**: `POST /api/addmultipleanimes` to insert arrays of anime.  
+- **Authentication**: JWT or OAuth2 support.  
+- **Rate Limiting**: Prevent abuse.  
+- **Metrics & Logging**: Integrate Prometheus & structured logs.
 
 ---
 
 ## 🐳 Docker Support
 
-AnimeVerse supports Docker for both **development** and **production** environments using multi-stage builds.
+We provide two Docker targets—**development** and **production**—using multi‑stage builds.
 
-### For **Development**:
+### Development
 
 ```bash
 docker build --target dev -t animeverse-dev .
-docker run -p 8000:8000 -v $(pwd):/app animeverse-dev
+```
+```bash
+docker run --rm \
+  -p 8000:8000 \       # API
+  -p 40000:40000 \     # Delve debugger
+  -v "$(pwd)":/app \   # Live reload
+  animeverse-dev
 ```
 
-#### 🔹 For **Production**:
+- **Hot‑Reload:** via [Air](https://github.com/cosmtrek/air)  
+- **Debugging:** with [Delve](https://github.com/go-delve/delve)  
+- **Full Go Toolchain** inside container  
+
+### Production
 
 ```bash
 docker build -t animeverse-prod .
-docker run -p 8000:8000 animeverse-prod
+```
+```bash
+docker run --rm \
+  --env-file .env \          # Secrets
+  -v "$(pwd)/.env:/.env:ro" \# (Optional) read‑only
+  -p 8000:8000 \             # API
+  animeverse-prod
 ```
 
-> Make sure you’ve configured your `.env` properly and MongoDB is accessible.
+- **Scratch Base:** ~5–10 MB image  
+- **Non‑Root User:** Enhanced security  
+- **Immutable Binary:** No package manager or shell  
 
 ---
 
 ## 📜 License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [MIT License](LICENSE).  
 
 ---
 
-Made with ❤️ by Flack
-
+Made with ❤️ by **Flack**
