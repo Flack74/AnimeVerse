@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1.4
-
 # ========================= Base Stage =========================
 FROM golang:1.24-bullseye AS build-base
 WORKDIR /src
