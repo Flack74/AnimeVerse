@@ -213,7 +213,7 @@ Visit [http://localhost:8000](http://localhost:8000) to see a welcoming homepage
 ## 📸 Screenshots
 
  ### Home Page ("/")
- ![Home Page](https://github.com/user-attachments/assets/6399dad4-a54a-4927-ad23-618b4d63f148)
+ ![Home Page](https://github.com/user-attachments/assets/0451fded-7a86-458e-b378-6a2c091765a8)
 
 ### API JSON Output ("/api/animes")
  ![API JSON Output](https://github.com/user-attachments/assets/2c075413-dba0-4a5a-a813-838138547791)
