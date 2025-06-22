@@ -24,16 +24,20 @@ const (
 	PlanToWatch WatchStatus = "plan-to-watch"
 )
 
-// Anime struct (Removed `Watched`)
+// Progress represents anime watching progress
+type Progress struct {
+	Watched int `json:"watched,omitempty" bson:"watched,omitempty"` // Episodes watched
+	Total   int `json:"total,omitempty" bson:"total,omitempty"`     // Total episodes (0 if unknown)
+}
+
+// Anime struct with improved validation and structure
 type Anime struct {
 	ID       primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Name     string             `json:"name,omitempty"`
-	Type     AnimeType          `json:"type,omitempty"`
-	Score    int                `json:"score,omitempty"` // Rating from 1 to 10
-	Progress struct {
-		Watched int `json:"watched,omitempty"` // Episodes watched
-		Total   int `json:"total,omitempty"`   // Total episodes (0 if unknown)
-	} `json:"progress,omitempty"`
-	Status WatchStatus `json:"status,omitempty"` // watching status
-	Genre  []string    `json:"genre,omitempty"`  // Genre tags (e.g., "action", "isekai", "romance")
+	Name     string             `json:"name" bson:"name" validate:"required,min=1,max=200"`
+	Type     AnimeType          `json:"type,omitempty" bson:"type,omitempty"`
+	Score    int                `json:"score,omitempty" bson:"score,omitempty" validate:"min=0,max=10"` // Rating from 0 to 10
+	Progress Progress           `json:"progress,omitempty" bson:"progress,omitempty"`
+	Status   WatchStatus        `json:"status,omitempty" bson:"status,omitempty"`
+	Genre    []string           `json:"genre,omitempty" bson:"genre,omitempty"` // Genre tags
+	Notes    string             `json:"notes,omitempty" bson:"notes,omitempty" validate:"max=500"` // Personal notes
 }

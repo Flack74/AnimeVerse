@@ -10,14 +10,14 @@ import (
 
 	"github.com/Flack74/mongoapi/config"
 	model "github.com/Flack74/mongoapi/models"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func FindAnimeByName(name string) (*model.Anime, error) {
-	collection := config.Collection 
+	collection := config.Collection
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -67,9 +67,7 @@ func InsertOneAnime(anime model.Anime) error {
 
 func UpdateAnime(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(r)
-	idStr := params["id"]
-
+	idStr := chi.URLParam(r, "id")
 
 	objectID, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
@@ -77,7 +75,6 @@ func UpdateAnime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	
 	var updates map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -103,7 +100,7 @@ func UpdateAnime(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println("Successfully updated anime:", idStr)
-	
+
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"matched":  result.MatchedCount,
 		"modified": result.ModifiedCount,
@@ -111,23 +108,28 @@ func UpdateAnime(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-
-func DeleteOneAnime(animeId string) {
+func DeleteOneAnime(animeId string) bool {
 	id, err := primitive.ObjectIDFromHex(animeId)
 	if err != nil {
 		log.Println("Invalid ObjectID:", err)
-		return
+		return false
 	}
 
 	filter := bson.M{"_id": id}
 	result, err := config.Collection.DeleteOne(context.Background(), filter)
 	if err != nil {
 		log.Println("Error deleting anime:", err)
-		return
+		return false
 	}
+	
+	if result.DeletedCount == 0 {
+		log.Println("No anime found with ID:", animeId)
+		return false
+	}
+	
 	fmt.Println("Anime deleted with count:", result.DeletedCount)
+	return true
 }
-
 
 func DeleteAllAnime() int64 {
 	deleteResult, err := config.Collection.DeleteMany(context.Background(), bson.D{{}})

@@ -1,19 +1,25 @@
-#  AnimeVerse
+# 🌸 AnimeVerse API
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Flack74/AnimeApi) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Flack74/AnimeVerse) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Go Version](https://img.shields.io/badge/go-1.24+-blue)](https://golang.org/) [![Chi Router](https://img.shields.io/badge/router-chi-orange)](https://github.com/go-chi/chi)
 
-Welcome to **AnimeVerse** – your one-stop RESTful API for managing and exploring your favorite anime collection! Built with **Go**, **MongoDB**, and **Gorilla Mux**, this API lets you create, read, update, and delete anime records with ease. Whether you're a casual fan or a hardcore otaku, Anime API has got you covered! 🎉
+Welcome to **AnimeVerse** – your ultimate RESTful API for managing and exploring your favorite anime collection! Built with **Go**, **MongoDB**, and **Chi Router**, this API provides a robust, scalable solution for anime enthusiasts. Whether you're a casual fan or a hardcore otaku, AnimeVerse API has got you covered! 🎉
 
 ---
 
 ## 🚀 Features
 
-- **CRUD Operations:** Create, Read, Update, and Delete anime records effortlessly.
-- **Partial Updates:** Send a JSON payload with only the fields you need to update.
-- **MongoDB Integration:** Secure and scalable storage with MongoDB.
-- **RESTful Design:** Clean and intuitive endpoints.
-- **Detailed Data:** Manage anime with fields like name, type, score, progress, status, and genre.
-- **No Duplication:** Prevents duplicate anime entries.
+- **📝 CRUD Operations:** Create, Read, Update, and Delete anime records effortlessly
+- **🔄 Partial Updates:** Send JSON payload with only the fields you need to update
+- **🏛️ MongoDB Integration:** Secure and scalable NoSQL database storage
+- **🌐 RESTful Design:** Clean, intuitive, and standardized API endpoints
+- **🛡️ Chi Router:** Fast, lightweight HTTP router with middleware support
+- **🔒 CORS Support:** Cross-Origin Resource Sharing enabled for web applications
+- **📊 Request Logging:** Comprehensive logging with Chi middleware
+- **⏱️ Timeout Protection:** Request timeout handling for better reliability
+- **🗃️ Response Compression:** Automatic gzip compression for better performance
+- **🚫 Duplicate Prevention:** Prevents duplicate anime entries by name
+- **📊 Detailed Data:** Manage anime with name, type, score, progress, status, genre, and notes
+- **🚑 Graceful Shutdown:** Proper server shutdown handling
 
 ---
 
@@ -46,11 +52,35 @@ Welcome to **AnimeVerse** – your one-stop RESTful API for managing and explori
 
 4. **Run the Application:**
 
+   **Development Mode (with hot reload):**
+   ```bash
+   # Install Air for hot reloading (if not already installed)
+   go install github.com/air-verse/air@latest
+   
+   # Run with hot reload
+   air
+   ```
+
+   **Production Mode:**
    ```bash
    go run main.go
    ```
 
    The API will be available at [http://localhost:8000](http://localhost:8000) 🎉
+
+5. **Docker Support (Optional):**
+
+   **Development:**
+   ```bash
+   docker build --target dev -t animeverse-dev .
+   docker run -p 8000:8000 -v $(pwd):/src animeverse-dev
+   ```
+
+   **Production:**
+   ```bash
+   docker build -t animeverse-prod .
+   docker run -p 8000:8000 animeverse-prod
+   ```
 
 ---
 
@@ -76,8 +106,30 @@ Visit [http://localhost:8000](http://localhost:8000) to see a welcoming homepage
               "total": 88
           },
           "status": "watching",
-          "tags": ["action", "shounen", "superhero"]
+          "genre": ["action", "shounen", "superhero"],
+          "notes": "Amazing superhero anime with great character development"
         }'
+  ```
+
+  **Response:**
+  ```json
+  {
+    "success": true,
+    "message": "Anime created successfully",
+    "data": {
+      "_id": "...",
+      "name": "My Hero Academia",
+      "type": "TV",
+      "score": 9,
+      "progress": {
+        "watched": 25,
+        "total": 88
+      },
+      "status": "watching",
+      "genre": ["action", "shounen", "superhero"],
+      "notes": "Amazing superhero anime with great character development"
+    }
+  }
   ```
 
 - **Get All Anime:**
@@ -86,10 +138,29 @@ Visit [http://localhost:8000](http://localhost:8000) to see a welcoming homepage
   curl http://localhost:8000/api/animes
   ```
 
+  **Response:**
+  ```json
+  {
+    "success": true,
+    "message": "Animes retrieved successfully",
+    "data": [
+      {
+        "_id": "...",
+        "name": "Attack on Titan",
+        "type": "TV",
+        "score": 10,
+        "status": "completed"
+      }
+    ]
+  }
+  ```
+
 - **Get an Anime by Name:**
 
   ```bash
-  curl http://localhost:8000/api/anime/{animeName}
+  curl http://localhost:8000/api/anime/attack-on-titan
+  # or
+  curl http://localhost:8000/api/anime/attack_on_titan
   ```
 
 - **Update an Anime (Partial Update):**
@@ -103,7 +174,8 @@ Visit [http://localhost:8000](http://localhost:8000) to see a welcoming homepage
               "watched": 88,
               "total": 88
           },
-          "status": "completed"
+          "status": "completed",
+          "notes": "Masterpiece! One of the best anime ever made."
         }'
   ```
 
@@ -125,12 +197,16 @@ Visit [http://localhost:8000](http://localhost:8000) to see a welcoming homepage
 
 | Method | Endpoint                  | Description                              |
 | ------ | ------------------------- | ---------------------------------------- |
+| GET    | `/`                       | Homepage with API information            |
+| GET    | `/health`                 | Health check endpoint                    |
 | GET    | `/api/animes`             | Retrieve all anime records               |
 | GET    | `/api/anime/{animeName}`  | Retrieve a specific anime by name        |
 | POST   | `/api/anime`              | Create a new anime record                |
 | PUT    | `/api/anime/{id}`         | Update an anime record (partial update)  |
 | DELETE | `/api/anime/{id}`         | Delete a specific anime record           |
 | DELETE | `/api/deleteallanime`     | Delete all anime records                 |
+
+📚 **For detailed API documentation with examples, see [API_DOCS.md](API_DOCS.md)**
 
 ---
 
@@ -207,6 +283,42 @@ docker run -p 8000:8000 animeverse-prod
 ```
 
 > Make sure you’ve configured your `.env` properly and MongoDB is accessible.
+
+---
+
+## 🌆 What's New in v2.0
+
+### 🔄 Migration from Gorilla Mux to Chi Router
+
+AnimeVerse API has been upgraded with significant improvements:
+
+- **⚡ Performance:** Chi router provides better performance and lower memory footprint
+- **🔧 Middleware:** Built-in middleware support for logging, recovery, CORS, and compression
+- **📊 Better Responses:** Standardized JSON response format with success/error indicators
+- **🚫 Input Validation:** Enhanced request validation and error handling
+- **🚑 Graceful Shutdown:** Proper server shutdown handling
+- **📝 Improved Logging:** Better request/response logging
+
+### 🆕 Response Format
+
+All API responses now follow a consistent format:
+
+```json
+{
+  "success": true,
+  "message": "Operation completed successfully",
+  "data": { /* actual data */ },
+  "error": "" // only present when success is false
+}
+```
+
+### 🔧 Technical Improvements
+
+- **Chi Router:** Migrated from Gorilla Mux to Chi for better performance
+- **Middleware Stack:** Request logging, recovery, timeout, and compression
+- **CORS Support:** Cross-origin requests enabled for web applications
+- **Graceful Shutdown:** Proper signal handling for clean server shutdown
+- **Docker Multi-stage:** Optimized Docker builds for development and production
 
 ---
 

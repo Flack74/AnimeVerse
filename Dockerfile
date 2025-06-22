@@ -1,81 +1,71 @@
-# debian for easier build utilities
+# syntax=docker/dockerfile:1.4
+
+# ========================= Base Stage =========================
 FROM golang:1.24-bullseye AS build-base
+WORKDIR /src
 
-WORKDIR /app
-
-# Copy only go mod files first for caching
+# only copy modules, download deps
 COPY go.mod go.sum ./
-
-# Cache modules
 RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
     go mod download
 
-# ========================== Development Stage ==========================
+# ========================= Development Stage =========================
 FROM build-base AS dev
 
-# Install air & delve
-RUN go install github.com/air-verse/air@v1.61.7 && \
-    go install github.com/go-delve/delve/cmd/dlv@v1.22.1
+# install hot‑reload & debugger
+RUN go install github.com/air-verse/air@v1.61.7 \
+ && go install github.com/go-delve/delve/cmd/dlv@v1.22.1
 
-WORKDIR /app
-
-# Copy entire app
+WORKDIR /src
 COPY . .
-
-# Create build output directory
 RUN mkdir -p tmp
 
-# Copy Air config if it exists
-COPY .air.toml .air.toml
-
-# Use Air to hot-reload
 CMD ["air", "-c", ".air.toml"]
 
 # ========================= Production Build Stage =========================
 FROM build-base AS build-production
 
-# Add non-root user
+LABEL \
+  org.opencontainers.image.title="Animeverse API" \
+  org.opencontainers.image.description="REST API for Animeverse" \
+  org.opencontainers.image.source="https://github.com/Flack74/animeverse" \
+  org.opencontainers.image.license="MIT"
+
+# create non‑root user early
 RUN useradd -u 1001 nonroot
 
-WORKDIR /app
+# install CA certs for TLS
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
+WORKDIR /src
+ENV CGO_ENABLED=0 \
+    GIN_MODE=release
+
+# copy code & build
 COPY . .
-
-# Build healthcheck binary
 RUN go build \
     -buildvcs=false \
-    -ldflags="-linkmode external -extldflags -static" \
     -tags netgo \
-    -o /app/healthcheck \
-    ./healthcheck/healthcheck.go
-
-# Build main app
-RUN go build \
-    -buildvcs=false \
-    -ldflags="-linkmode external -extldflags -static" \
-    -tags netgo \
-    -o /app/animeverse-api \
-    ./cmd/server
+    -ldflags="-s -w" \
+    -o /animeverse-api \
+    .
 
 # ========================= Final Minimal Image =========================
 FROM scratch
 
-# Set gin to release mode
 ENV GIN_MODE=release
-
 WORKDIR /
 
-# Non-root setup
+# bring in user & certs
 COPY --from=build-production /etc/passwd /etc/passwd
 COPY --from=build-production /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-# Copy built binaries
-COPY --from=build-production /app/healthcheck healthcheck
-COPY --from=build-production /app/animeverse-api animeverse-api
+# copy the API binary
+COPY --from=build-production /animeverse-api /animeverse-api
 
 USER nonroot
 
 EXPOSE 8000
-
-CMD ["/animeverse-api"]
+ENTRYPOINT ["/animeverse-api"]
