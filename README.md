@@ -464,6 +464,16 @@ terraform destroy -auto-approve
 
 ---
 
+## 🌆 What's New in v3.0
+
+### 🆕 Major Features Added
+
+- **📦 Bulk Anime Insertion:** Create multiple anime records in one request
+- **🖼️ Enhanced Data Model:** Added `bannerUrl` and `imageUrl` fields
+- **🔄 CI/CD Pipeline:** Automated testing and Docker Hub deployment
+- **☁️ AWS Deployment:** One-click EC2 deployment with Terraform
+- **🌐 Production Ready:** Public demo deployment capability
+
 ## 🌆 What's New in v2.0
 
 ### 🔄 Migration from Gorilla Mux to Chi Router

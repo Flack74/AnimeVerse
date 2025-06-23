@@ -172,7 +172,7 @@ func DeleteEveryAnimesHandler(w http.ResponseWriter, r *http.Request) {
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, "API is healthy", map[string]string{
 		"status":    "healthy",
-		"version":   "2.0",
+		"version":   "3.0",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 	}, "")
 }
@@ -184,7 +184,7 @@ func ServeHomeHandler(w http.ResponseWriter, r *http.Request) {
 		<head>
 			<meta charset="UTF-8">
 			<meta name="viewport" content="width=device-width, initial-scale=1.0">
-			<title>AnimeVerse API v2.0</title>
+			<title>AnimeVerse API v3.0</title>
 			<style>
 				body {
 					font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -252,7 +252,7 @@ func ServeHomeHandler(w http.ResponseWriter, r *http.Request) {
 		<body>
 			<div class="container">
 				<h1>🌸 AnimeVerse API</h1>
-				<div class="version">v2.0 - Powered by Chi Router</div>
+				<div class="version">v3.0 - Production Ready</div>
 				<p>Your ultimate RESTful API for managing and exploring anime collections!</p>
 				<div class="features">
 					<div class="feature">
