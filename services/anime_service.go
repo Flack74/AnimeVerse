@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Flack74/mongoapi/config"
@@ -14,6 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func FindAnimeByName(name string) (*model.Anime, error) {
@@ -184,6 +186,103 @@ func GetAllAnimes() []primitive.M {
 	cur, err := config.Collection.Find(context.Background(), bson.D{{}})
 	if err != nil {
 		log.Println("Error fetching animes:", err)
+		return []primitive.M{} // Return empty slice instead of nil
+	}
+	defer cur.Close(context.Background())
+
+	var animes []primitive.M
+	for cur.Next(context.Background()) {
+		var anime bson.M
+		if err := cur.Decode(&anime); err != nil {
+			log.Println("Error decoding anime:", err)
+			continue
+		}
+		animes = append(animes, anime)
+	}
+	log.Printf("GetAllAnimes: Found %d total animes", len(animes))
+	return animes
+}
+
+func FilterAnimes(search, genre, year, season, format, status string) []primitive.M {
+	filter := bson.M{}
+	
+	// Build filter with proper field matching
+	if search != "" {
+		filter["name"] = bson.M{"$regex": search, "$options": "i"}
+	}
+	if genre != "" {
+		// Use $in for array fields like genre
+		filter["genre"] = bson.M{"$in": []string{genre}}
+	}
+	if year != "" {
+		if yearInt, err := strconv.Atoi(year); err == nil {
+			filter["year"] = yearInt
+		}
+	}
+	if season != "" {
+		filter["season"] = bson.M{"$regex": "^" + season + "$", "$options": "i"}
+	}
+	if format != "" {
+		filter["type"] = bson.M{"$regex": "^" + format + "$", "$options": "i"}
+	}
+	if status != "" {
+		filter["status"] = bson.M{"$regex": "^" + status + "$", "$options": "i"}
+	}
+
+	// Log filter for debugging
+	log.Printf("Filter query: %+v", filter)
+	
+	cur, err := config.Collection.Find(context.Background(), filter)
+	if err != nil {
+		log.Println("Error filtering animes:", err)
+		return []primitive.M{} // Return empty slice instead of nil
+	}
+	defer cur.Close(context.Background())
+
+	var animes []primitive.M
+	for cur.Next(context.Background()) {
+		var anime bson.M
+		if err := cur.Decode(&anime); err != nil {
+			log.Println("Error decoding anime:", err)
+			continue
+		}
+		animes = append(animes, anime)
+	}
+	
+	log.Printf("Found %d animes with filter", len(animes))
+	return animes
+}
+
+func GetTrendingAnimes() []primitive.M {
+	filter := bson.M{}
+	opts := options.Find().SetSort(bson.D{{"score", -1}}).SetLimit(5)
+	
+	cur, err := config.Collection.Find(context.Background(), filter, opts)
+	if err != nil {
+		log.Println("Error fetching trending animes:", err)
+		return nil
+	}
+	defer cur.Close(context.Background())
+
+	var animes []primitive.M
+	for cur.Next(context.Background()) {
+		var anime bson.M
+		if err := cur.Decode(&anime); err != nil {
+			log.Println("Error decoding anime:", err)
+			continue
+		}
+		animes = append(animes, anime)
+	}
+	return animes
+}
+
+func GetPopularAnimes() []primitive.M {
+	filter := bson.M{"status": "completed"}
+	opts := options.Find().SetSort(bson.D{{"score", -1}}).SetLimit(5)
+	
+	cur, err := config.Collection.Find(context.Background(), filter, opts)
+	if err != nil {
+		log.Println("Error fetching popular animes:", err)
 		return nil
 	}
 	defer cur.Close(context.Background())

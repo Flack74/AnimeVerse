@@ -30,6 +30,16 @@ type Progress struct {
 	Total   int `json:"total,omitempty" bson:"total,omitempty"`     // Total episodes (0 if unknown)
 }
 
+// Season represents anime season
+type Season string
+
+const (
+	Winter Season = "Winter"
+	Spring Season = "Spring"
+	Summer Season = "Summer"
+	Fall   Season = "Fall"
+)
+
 // Anime struct with improved validation and structure
 type Anime struct {
 	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
@@ -42,4 +52,6 @@ type Anime struct {
 	Notes     string             `json:"notes,omitempty" bson:"notes,omitempty" validate:"max=500"` // Personal notes
 	BannerUrl string             `json:"bannerUrl,omitempty" bson:"bannerUrl,omitempty"`
 	ImageUrl  string             `json:"imageUrl,omitempty" bson:"imageUrl,omitempty"`
+	Year      int                `json:"year,omitempty" bson:"year,omitempty"`
+	Season    Season             `json:"season,omitempty" bson:"season,omitempty"`
 }

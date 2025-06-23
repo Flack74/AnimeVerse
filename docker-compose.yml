@@ -1,0 +1,22 @@
+services:
+  # Production service
+  animeverse:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+      
+  # Development service with hot reload
+  animeverse-dev:
+    build:
+      context: .
+      target: dev
+    ports:
+      - "8001:8000"
+    volumes:
+      - .:/src
+    env_file:
+      - .env
+    profiles:
+      - dev

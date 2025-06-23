@@ -11,16 +11,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const dbName = "anime"
-const colName = "watchlist"
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
 
 var Collection *mongo.Collection
 
 func ConnectDB() {
-	// Load environment variables
+	// Load environment variables (optional for Docker)
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal("Error loading .env file:", err)
+		log.Println("Error loading .env file:", err)
+		log.Println("Continuing with system environment variables...")
 	}
 
 	// Retrieve the connection string
@@ -45,5 +50,7 @@ func ConnectDB() {
 	}
 
 	fmt.Println("MongoDB connection success")
+	dbName := getEnvOrDefault("DBName", "anime")
+	colName := getEnvOrDefault("CollectionName", "watchlist")
 	Collection = client.Database(dbName).Collection(colName)
 }
