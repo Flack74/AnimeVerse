@@ -20,6 +20,9 @@ Welcome to **AnimeVerse** – your ultimate RESTful API for managing and explori
 - **🚫 Duplicate Prevention:** Prevents duplicate anime entries by name
 - **📊 Detailed Data:** Manage anime with name, type, score, progress, status, genre, and notes
 - **🚑 Graceful Shutdown:** Proper server shutdown handling
+- **🔄 CI/CD Pipeline:** Automated testing, building, and Docker Hub deployment
+- **☁️ AWS Deployment:** One-click deployment to EC2 with Terraform
+- **🌐 Public Access:** Demo-ready deployment with public IP
 
 ---
 
@@ -81,6 +84,50 @@ Welcome to **AnimeVerse** – your ultimate RESTful API for managing and explori
    docker build -t animeverse-prod .
    docker run -p 8000:8000 animeverse-prod
    ```
+
+---
+
+## 📊 Anime Data Structure
+
+Each anime record in AnimeVerse follows this data structure:
+
+```json
+{
+  "_id": "6858f43b802fc0a3285a680e",
+  "bannerUrl": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/16498-8jpFCOcDmneX.jpg",
+  "genre": [
+    "Action",
+    "Drama",
+    "Fantasy",
+    "Mystery"
+  ],
+  "imageUrl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx16498-buvcRTBx4NSm.jpg",
+  "name": "Attack on Titan",
+  "notes": "Several hundred years ago, humans were nearly exterminated by titans...",
+  "progress": {
+    "total": 25
+  },
+  "score": 8,
+  "status": "completed",
+  "type": "TV"
+}
+```
+
+### Field Descriptions
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `_id` | String | Unique MongoDB ObjectId |
+| `bannerUrl` | String | URL to anime banner image |
+| `genre` | Array | List of anime genres |
+| `imageUrl` | String | URL to anime cover image |
+| `name` | String | Anime title |
+| `notes` | String | Synopsis or personal notes |
+| `progress` | Object | Viewing progress information |
+| `progress.total` | Number | Total episodes available |
+| `score` | Number | Personal rating (1-10) |
+| `status` | String | Viewing status (completed, watching, etc.) |
+| `type` | String | Anime type (TV, Movie, OVA, etc.) |
 
 ---
 
@@ -185,6 +232,41 @@ Visit [http://localhost:8000](http://localhost:8000) to see a welcoming homepage
   curl -X DELETE http://localhost:8000/api/anime/{id}
   ```
 
+- **Create Multiple Anime (Bulk Insert):**
+
+  ```bash
+  curl -X POST http://localhost:8000/api/addmultipleanimes \
+    -H "Content-Type: application/json" \
+    -d '[
+          {
+            "name": "Attack on Titan",
+            "type": "TV",
+            "score": 9,
+            "genre": ["Action", "Drama", "Fantasy"],
+            "status": "completed"
+          },
+          {
+            "name": "Demon Slayer",
+            "type": "TV", 
+            "score": 8,
+            "genre": ["Action", "Supernatural"],
+            "status": "watching"
+          }
+        ]'
+  ```
+
+  **Response:**
+  ```json
+  {
+    "success": true,
+    "message": "All animes created successfully",
+    "data": {
+      "inserted_count": 2,
+      "inserted_ids": ["...", "..."]
+    }
+  }
+  ```
+
 - **Delete All Anime:**
 
   ```bash
@@ -202,6 +284,7 @@ Visit [http://localhost:8000](http://localhost:8000) to see a welcoming homepage
 | GET    | `/api/animes`             | Retrieve all anime records               |
 | GET    | `/api/anime/{animeName}`  | Retrieve a specific anime by name        |
 | POST   | `/api/anime`              | Create a new anime record                |
+| POST   | `/api/addmultipleanimes`  | Create multiple anime records (bulk)     |
 | PUT    | `/api/anime/{id}`         | Update an anime record (partial update)  |
 | DELETE | `/api/anime/{id}`         | Delete a specific anime record           |
 | DELETE | `/api/deleteallanime`     | Delete all anime records                 |
@@ -283,6 +366,101 @@ docker run -p 8000:8000 animeverse-prod
 ```
 
 > Make sure you’ve configured your `.env` properly and MongoDB is accessible.
+
+---
+
+## 🔄 CI/CD Pipeline
+
+AnimeVerse API includes automated CI/CD using GitHub Actions that:
+
+- **🧪 Runs Tests:** Executes `go test ./...` on every push to main
+- **🐳 Builds Docker Image:** Creates optimized production image
+- **📦 Pushes to Docker Hub:** Automatically deploys as `flack74621/animeverse:latest`
+- **⚡ Zero Downtime:** Automated deployment pipeline
+
+### Setup Requirements
+
+Add these secrets to your GitHub repository:
+- `DOCKER_USERNAME` - Your Docker Hub username
+- `DOCKER_PASSWORD` - Your Docker Hub password/token
+
+### Pull the Latest Image
+
+```bash
+docker pull flack74621/animeverse:latest
+docker run -p 8000:8000 flack74621/animeverse:latest
+```
+
+---
+
+## ☁️ AWS Deployment
+
+Deploy AnimeVerse API to AWS EC2 with one click using Terraform:
+
+### Prerequisites
+
+Add these AWS secrets to your GitHub repository:
+- `AWS_ACCESS_KEY_ID` - Your AWS access key
+- `AWS_SECRET_ACCESS_KEY` - Your AWS secret key
+
+### Manual Deployment
+
+1. Go to **Actions** tab in your GitHub repository
+2. Select **Deploy to AWS** workflow
+3. Click **Run workflow**
+4. Choose environment (production/staging)
+5. Click **Run workflow**
+
+### What Gets Deployed
+
+- **EC2 Instance:** t2.micro (Free Tier eligible)
+- **Security Group:** Allows HTTP (8000) and SSH (22)
+- **Docker Container:** Latest AnimeVerse image
+- **Public Access:** Accessible via public IP
+
+### Access Your Deployment
+
+After deployment completes, check the workflow logs for:
+```
+🚀 Application deployed at: http://YOUR-EC2-IP:8000
+```
+
+### Deployment Architecture
+
+```
+🌐 Internet
+    │
+    ↓
+🔒 Security Group (Port 8000, 22)
+    │
+    ↓
+💻 EC2 Instance (t2.micro)
+    │
+    ↓
+🐳 Docker Container (AnimeVerse API)
+```
+
+### Cleanup Resources
+
+To avoid AWS charges, destroy resources when done:
+
+```bash
+cd terraform
+terraform destroy -auto-approve
+```
+
+### Troubleshooting
+
+**If deployment fails:**
+1. Check AWS credentials are correctly set
+2. Ensure AWS account has EC2 permissions
+3. Verify Docker image exists on Docker Hub
+4. Check workflow logs for specific errors
+
+**If application doesn't respond:**
+- Wait 2-3 minutes for EC2 to fully boot
+- Check Security Group allows port 8000
+- Verify Docker container is running
 
 ---
 

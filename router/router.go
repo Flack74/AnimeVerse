@@ -37,6 +37,7 @@ func Router() *chi.Mux {
 		r.Get("/animes", controller.GetMyAllAnimesHandler)
 		r.Get("/anime/{animeName}", controller.GetAnimeByNameHandler)
 		r.Post("/anime", controller.CreateAnimeHandler)
+		r.Post("/addmultipleanimes", controller.CreateMultipleAnimesHandler)
 		r.Put("/anime/{id}", controller.UpdateAnimeHandler)
 		r.Delete("/anime/{id}", controller.DeleteAnAnimeHandler)
 		r.Delete("/deleteallanime", controller.DeleteEveryAnimesHandler)

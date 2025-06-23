@@ -102,6 +102,43 @@ func CreateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusCreated, true, "Anime created successfully", anime, "")
 }
 
+func CreateMultipleAnimesHandler(w http.ResponseWriter, r *http.Request) {
+	var animes []model.Anime
+	if err := json.NewDecoder(r.Body).Decode(&animes); err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "", nil, "Invalid request body")
+		return
+	}
+
+	if len(animes) == 0 {
+		sendJSONResponse(w, http.StatusBadRequest, false, "", nil, "No animes provided")
+		return
+	}
+
+	insertedIDs, duplicates, err := services.InsertMultipleAnimes(animes)
+	if err != nil {
+		if len(duplicates) > 0 {
+			sendJSONResponse(w, http.StatusPartialContent, false, "", map[string]interface{}{
+				"duplicates": duplicates,
+			}, "Some animes already exist or failed to insert")
+		} else {
+			sendJSONResponse(w, http.StatusInternalServerError, false, "", nil, "Failed to insert animes")
+		}
+		return
+	}
+
+	responseData := map[string]interface{}{
+		"inserted_count": len(insertedIDs),
+		"inserted_ids":   insertedIDs,
+	}
+
+	if len(duplicates) > 0 {
+		responseData["duplicates"] = duplicates
+		sendJSONResponse(w, http.StatusPartialContent, true, "Animes inserted with some duplicates skipped", responseData, "")
+	} else {
+		sendJSONResponse(w, http.StatusCreated, true, "All animes created successfully", responseData, "")
+	}
+}
+
 func UpdateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	services.UpdateAnime(w, r)
 }

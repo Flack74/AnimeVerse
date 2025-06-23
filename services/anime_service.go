@@ -65,6 +65,45 @@ func InsertOneAnime(anime model.Anime) error {
 	return nil
 }
 
+func InsertMultipleAnimes(animes []model.Anime) ([]interface{}, []string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var validAnimes []interface{}
+	var duplicates []string
+
+	for _, anime := range animes {
+		if anime.Name == "" {
+			continue
+		}
+		
+		existing, err := FindAnimeByName(anime.Name)
+		if err != nil {
+			log.Printf("Error checking duplicate for %s: %v", anime.Name, err)
+			continue
+		}
+		if existing != nil {
+			duplicates = append(duplicates, anime.Name)
+			continue
+		}
+		
+		validAnimes = append(validAnimes, anime)
+	}
+
+	if len(validAnimes) == 0 {
+		return nil, duplicates, fmt.Errorf("no valid animes to insert")
+	}
+
+	result, err := config.Collection.InsertMany(ctx, validAnimes)
+	if err != nil {
+		log.Println("Error inserting multiple animes:", err)
+		return nil, duplicates, err
+	}
+
+	fmt.Printf("Inserted %d animes in db\n", len(result.InsertedIDs))
+	return result.InsertedIDs, duplicates, nil
+}
+
 func UpdateAnime(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	idStr := chi.URLParam(r, "id")

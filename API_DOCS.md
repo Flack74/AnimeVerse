@@ -167,6 +167,69 @@ Create a new anime record.
 }
 ```
 
+#### POST `/api/addmultipleanimes`
+Create multiple anime records in a single request (bulk insertion).
+
+**Request Body:**
+```json
+[
+  {
+    "name": "Attack on Titan",
+    "type": "TV",
+    "score": 9,
+    "genre": ["Action", "Drama", "Fantasy"],
+    "status": "completed",
+    "bannerUrl": "https://example.com/banner.jpg",
+    "imageUrl": "https://example.com/cover.jpg"
+  },
+  {
+    "name": "Demon Slayer",
+    "type": "TV",
+    "score": 8,
+    "genre": ["Action", "Supernatural"],
+    "status": "watching"
+  }
+]
+```
+
+**Features:**
+- Automatically skips duplicate anime (by name)
+- Uses MongoDB's InsertMany for optimal performance
+- Returns detailed response with inserted IDs and duplicates
+
+**Response (201 - All inserted):**
+```json
+{
+  "success": true,
+  "message": "All animes created successfully",
+  "data": {
+    "inserted_count": 2,
+    "inserted_ids": ["507f1f77bcf86cd799439012", "507f1f77bcf86cd799439013"]
+  }
+}
+```
+
+**Response (206 - Partial success with duplicates):**
+```json
+{
+  "success": true,
+  "message": "Animes inserted with some duplicates skipped",
+  "data": {
+    "inserted_count": 1,
+    "inserted_ids": ["507f1f77bcf86cd799439012"],
+    "duplicates": ["Attack on Titan"]
+  }
+}
+```
+
+**Error Response (400):**
+```json
+{
+  "success": false,
+  "error": "No animes provided"
+}
+```
+
 #### PUT `/api/anime/{id}`
 Update an existing anime record (partial update supported).
 
@@ -293,6 +356,26 @@ curl -X POST http://localhost:8000/api/anime \
   }'
 ```
 
+**Create multiple anime (bulk):**
+```bash
+curl -X POST http://localhost:8000/api/addmultipleanimes \
+  -H "Content-Type: application/json" \
+  -d '[
+    {
+      "name": "One Piece",
+      "type": "TV",
+      "score": 9,
+      "genre": ["adventure", "comedy"]
+    },
+    {
+      "name": "Naruto",
+      "type": "TV",
+      "score": 8,
+      "genre": ["action", "ninja"]
+    }
+  ]'
+```
+
 **Update anime:**
 ```bash
 curl -X PUT http://localhost:8000/api/anime/507f1f77bcf86cd799439011 \
@@ -342,6 +425,41 @@ fetch('http://localhost:8000/api/anime', {
 .then(data => {
   if (data.success) {
     console.log('Created:', data.data);
+  } else {
+    console.error('Error:', data.error);
+  }
+});
+```
+
+**Create multiple anime (bulk):**
+```javascript
+fetch('http://localhost:8000/api/addmultipleanimes', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify([
+    {
+      name: 'Jujutsu Kaisen',
+      type: 'TV',
+      score: 9,
+      genre: ['action', 'supernatural']
+    },
+    {
+      name: 'Chainsaw Man',
+      type: 'TV',
+      score: 8,
+      genre: ['action', 'horror']
+    }
+  ])
+})
+.then(response => response.json())
+.then(data => {
+  if (data.success) {
+    console.log(`Inserted ${data.data.inserted_count} animes`);
+    if (data.data.duplicates) {
+      console.log('Duplicates skipped:', data.data.duplicates);
+    }
   } else {
     console.error('Error:', data.error);
   }
