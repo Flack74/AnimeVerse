@@ -19,6 +19,7 @@ func getEnvOrDefault(key, defaultValue string) string {
 }
 
 var Collection *mongo.Collection
+var UserCollection *mongo.Collection
 
 func ConnectDB() {
 	// Load environment variables (optional for Docker)
@@ -52,5 +53,7 @@ func ConnectDB() {
 	fmt.Println("MongoDB connection success")
 	dbName := getEnvOrDefault("DBName", "anime")
 	colName := getEnvOrDefault("CollectionName", "watchlist")
+	userColName := getEnvOrDefault("UserCollectionName", "users")
 	Collection = client.Database(dbName).Collection(colName)
+	UserCollection = client.Database(dbName).Collection(userColName)
 }

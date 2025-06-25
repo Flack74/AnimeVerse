@@ -125,18 +125,29 @@ go run main.go
 
 ## 🔄 CI/CD Pipeline
 
-AnimeVerse includes automated CI/CD using GitHub Actions that:
+AnimeVerse includes automated CI/CD using GitHub Actions with two workflows:
 
-- **🧪 Runs Tests:** Executes `go test ./...` on every push to main
-- **🐳 Builds Docker Image:** Creates optimized production image
-- **📦 Pushes to Docker Hub:** Automatically deploys as `flack74621/animeverse:latest`
+### 📦 **Continuous Integration** (`ci-cd.yml`)
+Automatically triggered on every push to main:
+- **🧪 Runs Tests:** Executes `go test ./...`
+- **🐳 Builds Docker Image:** Multi-stage production build
+- **📦 Pushes to Docker Hub:** Deploys as `flack74621/animeverse:latest`
 - **⚡ Zero Downtime:** Automated deployment pipeline
+
+### 🚀 **AWS Deployment** (`deploy.yml`)
+Manual deployment workflow with environment selection:
+- **☁️ Terraform Infrastructure:** Provisions EC2, Security Groups
+- **🖥️ EC2 Deployment:** Automated Docker container deployment
+- **🌐 Public Access:** Provides deployment URL
+- **🎯 Environment Support:** Production/Staging environments
 
 ### Setup Requirements
 
 Add these secrets to your GitHub repository:
 - `DOCKER_USERNAME` - Your Docker Hub username
 - `DOCKER_PASSWORD` - Your Docker Hub password/token
+- `AWS_ACCESS_KEY_ID` - Your AWS access key
+- `AWS_SECRET_ACCESS_KEY` - Your AWS secret key
 
 ### Pull the Latest Image
 
@@ -162,15 +173,9 @@ docker-compose down
 
 ## ☁️ AWS Deployment
 
-Deploy AnimeVerse API to AWS EC2 with one click using Terraform:
+Deploy AnimeVerse API to AWS EC2 with one click using Terraform infrastructure as code:
 
-### Prerequisites
-
-Add these AWS secrets to your GitHub repository:
-- `AWS_ACCESS_KEY_ID` - Your AWS access key
-- `AWS_SECRET_ACCESS_KEY` - Your AWS secret key
-
-### Manual Deployment
+### 🚀 **Quick Deployment**
 
 1. Go to **Actions** tab in your GitHub repository
 2. Select **Deploy to AWS** workflow
@@ -178,56 +183,71 @@ Add these AWS secrets to your GitHub repository:
 4. Choose environment (production/staging)
 5. Click **Run workflow**
 
-### What Gets Deployed
+### 🏗️ **Infrastructure Components**
 
+**Terraform Configuration:**
+- **Provider:** AWS (us-east-1 region)
 - **EC2 Instance:** t2.micro (Free Tier eligible)
-- **Security Group:** Allows HTTP (8000) and SSH (22)
-- **Docker Container:** Latest AnimeVerse image
-- **Public Access:** Accessible via public IP
+- **Security Group:** HTTP (8000) and SSH (22) access
+- **Auto-deployment:** Docker container with latest image
+- **User Data Script:** Automated Docker installation and app startup
 
-### Access Your Deployment
+**Deployment Process:**
+1. **Terraform Init:** Initialize backend and providers
+2. **Terraform Plan:** Preview infrastructure changes
+3. **Terraform Apply:** Create AWS resources
+4. **Docker Deployment:** Pull and run latest container
+5. **Output URLs:** Provide public access endpoint
+
+### 🌐 **Access Your Deployment**
 
 After deployment completes, check the workflow logs for:
 ```
 🚀 Application deployed at: http://YOUR-EC2-IP:8000
 ```
 
-### Deployment Architecture
+### 🏛️ **Architecture Overview**
 
 ```
 🌐 Internet
     │
     ↓
-🔒 Security Group (Port 8000, 22)
+🔒 AWS Security Group
+    ├── Port 8000 (HTTP)
+    └── Port 22 (SSH)
     │
     ↓
-💻 EC2 Instance (t2.micro)
-    │
-    ↓
-🐳 Docker Container (AnimeVerse API)
+💻 EC2 t2.micro Instance
+    ├── Amazon Linux 2023
+    ├── Docker Engine
+    └── AnimeVerse Container
 ```
 
-### Cleanup Resources
+### 🧹 **Resource Cleanup**
 
 To avoid AWS charges, destroy resources when done:
 
 ```bash
+# Manual cleanup
 cd terraform
 terraform destroy -auto-approve
+
+# Or use AWS Console to terminate EC2 instance
 ```
 
-### Troubleshooting
+### 🔧 **Troubleshooting**
 
-**If deployment fails:**
-1. Check AWS credentials are correctly set
-2. Ensure AWS account has EC2 permissions
-3. Verify Docker image exists on Docker Hub
-4. Check workflow logs for specific errors
+**Deployment Issues:**
+- ✅ Verify AWS credentials in GitHub secrets
+- ✅ Check AWS account has EC2/VPC permissions
+- ✅ Ensure Docker image exists on Docker Hub
+- ✅ Review workflow logs for specific errors
 
-**If application doesn't respond:**
-- Wait 2-3 minutes for EC2 to fully boot
-- Check Security Group allows port 8000
-- Verify Docker container is running
+**Application Access Issues:**
+- ⏱️ Wait 2-3 minutes for EC2 boot and Docker startup
+- 🔒 Verify Security Group allows port 8000
+- 🐳 SSH to instance and check: `docker ps`
+- 📊 Check application logs: `docker logs animeverse-app`
 
 ---
 
@@ -436,17 +456,21 @@ curl -X POST http://localhost:8000/api/admin/addmultipleanimes \
 ### **Project Structure**
 ```
 AnimeVerse/
-├── controllers/     # HTTP handlers
-├── models/         # Data structures
-├── services/       # Business logic
-├── config/         # Database configuration
-├── router/         # Route definitions
-├── middleware/     # Authentication middleware
-├── terraform/      # AWS deployment
-├── .github/        # CI/CD workflows
-├── docker-compose.yml
-├── Dockerfile
-└── main.go
+├── .github/workflows/  # CI/CD automation
+│   ├── ci-cd.yml      # Docker build & push
+│   └── deploy.yml     # AWS deployment
+├── terraform/         # Infrastructure as Code
+│   ├── main.tf       # AWS resources
+│   └── variables.tf  # Configuration
+├── controllers/      # HTTP handlers
+├── models/          # Data structures
+├── services/        # Business logic
+├── config/          # Database configuration
+├── router/          # Route definitions
+├── middleware/      # Authentication middleware
+├── docker-compose.yml # Multi-environment setup
+├── Dockerfile       # Multi-stage build
+└── main.go         # Application entry point
 ```
 
 ### **Environment Variables**
@@ -513,4 +537,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Happy Coding! 🚀 Enjoy managing your anime collection with AnimeVerse!**
+**Made with ❤️ by Flack. 🚀 Enjoy managing your anime collection with AnimeVerse!**

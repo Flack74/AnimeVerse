@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Flack74/mongoapi/middleware"
 	model "github.com/Flack74/mongoapi/models"
 	"github.com/Flack74/mongoapi/services"
 	"github.com/go-chi/chi/v5"
@@ -213,31 +214,36 @@ func renderAnimeModal(w http.ResponseWriter, anime *model.Anime) {
 				<h3 class="text-lg font-semibold text-white mb-2">Synopsis</h3>
 				<p class="text-gray-300 leading-relaxed">%s</p>
 			</div>
-			<div class="mt-6 flex gap-3">
-				<button class="bg-anime-blue hover:bg-blue-600 px-4 py-2 rounded-lg transition-colors"
-				        hx-post="/api/admin/anime/%s/episode/increment" 
-				        hx-target="#modal-content" 
-				        hx-swap="outerHTML">
-					+ Episode
-				</button>
-				<button class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg transition-colors"
-				        hx-post="/api/admin/anime/%s/episode/decrement" 
-				        hx-target="#modal-content" 
-				        hx-swap="outerHTML">
-					- Episode
-				</button>
-				<button class="bg-anime-purple hover:bg-purple-600 px-4 py-2 rounded-lg transition-colors"
-				        hx-post="/api/admin/anime/%s/status/toggle" 
-				        hx-target="#modal-content" 
-				        hx-swap="outerHTML">
-					Toggle Status
-				</button>
+			<div class="mt-6">
+				<h4 class="text-white font-semibold mb-3">Add to List:</h4>
+				<div class="flex flex-wrap gap-2 mb-4">
+					<button class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm transition-colors" onclick="addAnimeToList('%s', 'watching')">Watching</button>
+					<button class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm transition-colors" onclick="addAnimeToList('%s', 'completed')">Completed</button>
+					<button class="bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-sm transition-colors" onclick="addAnimeToList('%s', 'plan-to-watch')">Plan to Watch</button>
+					<button class="bg-orange-600 hover:bg-orange-700 px-3 py-1 rounded text-sm transition-colors" onclick="addAnimeToList('%s', 'on-hold')">On Hold</button>
+					<button class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors" onclick="addAnimeToList('%s', 'dropped')">Dropped</button>
+				</div>
+				<div class="flex gap-3">
+					<button class="bg-anime-blue hover:bg-blue-600 px-4 py-2 rounded-lg transition-colors"
+					        hx-post="/api/admin/anime/%s/episode/increment" 
+					        hx-target="#modal-content" 
+					        hx-swap="outerHTML">
+						+ Episode
+					</button>
+					<button class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg transition-colors"
+					        hx-post="/api/admin/anime/%s/episode/decrement" 
+					        hx-target="#modal-content" 
+					        hx-swap="outerHTML">
+						- Episode
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>`,
 		anime.ImageUrl, anime.Name, anime.Name, anime.Type, anime.Score, 
 		anime.Status, progressText, genreStr, yearSeason, anime.Notes,
-		anime.ID.Hex(), anime.ID.Hex(), anime.ID.Hex())
+		anime.Name, anime.Name, anime.Name, anime.Name, anime.Name,
+		anime.ID.Hex(), anime.ID.Hex())
 }
 
 func GetMyAllAnimesHandler(w http.ResponseWriter, r *http.Request) {
@@ -405,8 +411,15 @@ func FilterAnimesHandler(w http.ResponseWriter, r *http.Request) {
 	season := r.URL.Query().Get("season")
 	format := r.URL.Query().Get("format")
 	status := r.URL.Query().Get("status")
+	
+	// Get user ID if authenticated
+	userID := ""
+	if user := r.Context().Value("user"); user != nil {
+		claims := user.(*middleware.SupabaseClaims)
+		userID = claims.Sub
+	}
 
-	filteredAnimes := services.FilterAnimes(search, genre, year, season, format, status)
+	filteredAnimes := services.SmartSearch(search, genre, year, season, format, status, userID)
 	if filteredAnimes == nil {
 		sendJSONResponse(w, http.StatusInternalServerError, false, "", nil, "Failed to filter animes")
 		return
@@ -458,8 +471,7 @@ func GetPopularAnimesHandler(w http.ResponseWriter, r *http.Request) {
 
 func ServeFrontendHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(`
-<!DOCTYPE html>
+	w.Write([]byte(`<!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
@@ -467,6 +479,7 @@ func ServeFrontendHandler(w http.ResponseWriter, r *http.Request) {
     <title>AnimeVerse - Modern Anime Database</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -488,16 +501,9 @@ func ServeFrontendHandler(w http.ResponseWriter, r *http.Request) {
         .scrollbar-hide::-webkit-scrollbar {
             display: none;
         }
-        .htmx-indicator {
-            display: none;
-        }
-        .htmx-request .htmx-indicator {
-            display: block;
-        }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
-    <!-- Header -->
     <header class="bg-gray-800 shadow-lg">
         <div class="container mx-auto px-4 py-6">
             <div class="flex items-center justify-between">
@@ -507,33 +513,34 @@ func ServeFrontendHandler(w http.ResponseWriter, r *http.Request) {
                     </div>
                     <span class="text-sm text-gray-400">v3.0</span>
                 </div>
-                <nav class="hidden md:flex space-x-4">
+                <nav class="hidden md:flex space-x-4 items-center">
                     <a href="#" class="text-gray-300 hover:text-white transition-colors">Home</a>
                     <a href="/api/animes" class="text-gray-300 hover:text-white transition-colors">API</a>
-                    <button class="bg-anime-blue hover:bg-blue-600 px-3 py-1 rounded text-sm transition-colors"
-                            hx-post="/api/admin/import/trending" 
-                            hx-trigger="click"
-                            hx-confirm="Import 25 trending anime from MyAnimeList?">
-                        Import Trending
-                    </button>
-                    <button class="bg-anime-purple hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors"
-                            hx-post="/api/admin/import/seasonal?year=2024&season=winter" 
-                            hx-trigger="click"
-                            hx-confirm="Import 2024 Winter seasonal anime?">
-                        Import Seasonal
-                    </button>
+                    <div id="auth-section">
+                        <div id="signed-out" class="flex space-x-2">
+                            <button onclick="signIn()" class="bg-anime-blue hover:bg-blue-600 px-3 py-1 rounded text-sm transition-colors">Sign In</button>
+                            <button onclick="signUp()" class="bg-anime-purple hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">Sign Up</button>
+                        </div>
+                        <div id="signed-in" class="hidden flex space-x-2 items-center">
+                            <span id="user-name" class="text-gray-300"></span>
+                            <button onclick="signOut()" class="bg-gray-600 hover:bg-gray-500 px-3 py-1 rounded text-sm transition-colors">Sign Out</button>
+                        </div>
+                    </div>
+                    <div id="user-controls" class="hidden flex space-x-2">
+                        <button class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm transition-colors" onclick="searchExternalAnime()">Add Anime</button>
+                    </div>
+                    <div id="admin-controls" class="hidden flex space-x-2">
+                        <button class="bg-anime-blue hover:bg-blue-600 px-3 py-1 rounded text-sm transition-colors" onclick="importTrending()">Import Trending</button>
+                        <button class="bg-anime-purple hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors" onclick="importSeasonal()">Import Seasonal</button>
+                    </div>
                 </nav>
             </div>
         </div>
     </header>
-
-    <!-- Filters -->
     <section class="bg-gray-800 border-b border-gray-700">
         <div class="container mx-auto px-4 py-6">
             <form id="filter-form" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <input type="text" name="search" id="search-input" placeholder="Search anime..." 
-                       class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-anime-blue">
-                
+                <input type="text" name="search" id="search-input" placeholder="Search anime..." class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-anime-blue">
                 <select name="genre" id="genre-select" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-anime-blue">
                     <option value="">All Genres</option>
                     <option value="Action">Action</option>
@@ -548,7 +555,6 @@ func ServeFrontendHandler(w http.ResponseWriter, r *http.Request) {
                     <option value="Horror">Horror</option>
                     <option value="School">School</option>
                 </select>
-                
                 <select name="year" id="year-select" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-anime-blue">
                     <option value="">All Years</option>
                     <option value="2024">2024</option>
@@ -561,7 +567,6 @@ func ServeFrontendHandler(w http.ResponseWriter, r *http.Request) {
                     <option value="2017">2017</option>
                     <option value="2016">2016</option>
                 </select>
-                
                 <select name="season" id="season-select" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-anime-blue">
                     <option value="">All Seasons</option>
                     <option value="Winter">Winter</option>
@@ -569,7 +574,6 @@ func ServeFrontendHandler(w http.ResponseWriter, r *http.Request) {
                     <option value="Summer">Summer</option>
                     <option value="Fall">Fall</option>
                 </select>
-                
                 <select name="format" id="format-select" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-anime-blue">
                     <option value="">All Formats</option>
                     <option value="TV">TV</option>
@@ -577,7 +581,6 @@ func ServeFrontendHandler(w http.ResponseWriter, r *http.Request) {
                     <option value="ONA">ONA</option>
                     <option value="OVA">OVA</option>
                 </select>
-                
                 <select name="status" id="status-select" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-anime-blue">
                     <option value="">All Status</option>
                     <option value="watching">Watching</option>
@@ -587,8 +590,6 @@ func ServeFrontendHandler(w http.ResponseWriter, r *http.Request) {
                     <option value="plan-to-watch">Plan to Watch</option>
                 </select>
             </form>
-            
-            <!-- Loading Indicator -->
             <div id="loading" class="hidden mt-4 text-center">
                 <div class="inline-flex items-center px-4 py-2 bg-anime-blue rounded-lg">
                     <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -600,92 +601,166 @@ func ServeFrontendHandler(w http.ResponseWriter, r *http.Request) {
             </div>
         </div>
     </section>
-
-    <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
-        <!-- Trending Section -->
-        <section class="mb-12">
-            <h2 class="text-2xl font-bold mb-6 text-anime-blue">🔥 Trending Now</h2>
-            <div class="relative">
-                <div id="trending-grid" class="flex gap-6 overflow-x-auto pb-4 scrollbar-hide"
-                     hx-get="/api/animes/trending" hx-trigger="load" hx-swap="innerHTML">
-                    <div class="flex-none w-48 animate-pulse bg-gray-700 rounded-lg h-72"></div>
-                    <div class="flex-none w-48 animate-pulse bg-gray-700 rounded-lg h-72"></div>
-                    <div class="flex-none w-48 animate-pulse bg-gray-700 rounded-lg h-72"></div>
-                    <div class="flex-none w-48 animate-pulse bg-gray-700 rounded-lg h-72"></div>
-                    <div class="flex-none w-48 animate-pulse bg-gray-700 rounded-lg h-72"></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Popular Section -->
-        <section class="mb-12">
-            <h2 class="text-2xl font-bold mb-6 text-anime-purple">⭐ Popular This Season</h2>
-            <div class="relative">
-                <div id="popular-grid" class="flex gap-6 overflow-x-auto pb-4 scrollbar-hide"
-                     hx-get="/api/animes/popular" hx-trigger="load" hx-swap="innerHTML">
-                    <div class="flex-none w-48 animate-pulse bg-gray-700 rounded-lg h-72"></div>
-                    <div class="flex-none w-48 animate-pulse bg-gray-700 rounded-lg h-72"></div>
-                    <div class="flex-none w-48 animate-pulse bg-gray-700 rounded-lg h-72"></div>
-                    <div class="flex-none w-48 animate-pulse bg-gray-700 rounded-lg h-72"></div>
-                    <div class="flex-none w-48 animate-pulse bg-gray-700 rounded-lg h-72"></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- All Anime Grid -->
         <section>
             <h2 class="text-2xl font-bold mb-6">📚 All Anime</h2>
-            <div id="anime-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
-                 hx-get="/api/animes" hx-trigger="load" hx-swap="innerHTML">
+            <div id="anime-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 <div class="animate-pulse bg-gray-700 rounded-lg h-80"></div>
                 <div class="animate-pulse bg-gray-700 rounded-lg h-80"></div>
                 <div class="animate-pulse bg-gray-700 rounded-lg h-80"></div>
             </div>
         </section>
     </main>
-
-    <!-- Modal -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div id="modal-content"></div>
-            <button onclick="document.getElementById('modal').classList.add('hidden')" 
-                    class="mt-4 bg-anime-blue hover:bg-blue-600 px-4 py-2 rounded-lg transition-colors">
-                Close
-            </button>
+            <button onclick="closeModal()" class="mt-4 bg-anime-blue hover:bg-blue-600 px-4 py-2 rounded-lg transition-colors">Close</button>
         </div>
     </div>
-
     <script>
-        // Show modal function
-        function showModal() {
-            document.getElementById('modal').classList.remove('hidden');
-            document.getElementById('modal').classList.add('flex');
+        const supabaseUrl = 'https://rrrgpcnhzmnnjacvgzcn.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJycmdwY25oem1ubmphY3ZnemNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NDY3NDcsImV4cCI6MjA2NjMyMjc0N30.zZQ2aP_jEbCuqG3JehTni3xAesXrafiHUFYeD_-tTcE';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        let currentUser = null;
+        let authToken = null;
+        function showModal() { document.getElementById('modal').classList.remove('hidden'); document.getElementById('modal').classList.add('flex'); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); document.getElementById('modal').classList.remove('flex'); }
+        function signIn() { showAuthModal('login'); }
+        function signUp() { showAuthModal('register'); }
+        function signOut() { localStorage.removeItem('auth_token'); authToken = null; currentUser = null; updateAuthUI(); applyFilters(); }
+        function showAuthModal(type) {
+            const title = type === 'login' ? 'Sign In' : 'Sign Up';
+            const buttonText = type === 'login' ? 'Sign In' : 'Sign Up';
+            const switchText = type === 'login' ? 'Need an account? Sign up' : 'Have an account? Sign in';
+            const switchAction = type === 'login' ? 'register' : 'login';
+            document.getElementById('modal-content').innerHTML = '<div class="max-w-md mx-auto"><h2 class="text-2xl font-bold text-white mb-6">' + title + '</h2><form id="auth-form" class="space-y-4">' + (type === 'register' ? '<input type="text" name="name" placeholder="Full Name" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-anime-blue">' : '') + '<input type="email" name="email" placeholder="Email" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-anime-blue"><input type="password" name="password" placeholder="Password" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-anime-blue"><button type="submit" class="w-full bg-anime-blue hover:bg-blue-600 px-4 py-2 rounded-lg transition-colors">' + buttonText + '</button></form><div class="mt-4 text-center"><button onclick="showAuthModal(\'' + switchAction + '\')" class="text-anime-blue hover:text-blue-400 text-sm">' + switchText + '</button></div><div class="mt-4 text-center"><p class="text-gray-400 text-sm mb-2">Or continue with:</p><div class="flex gap-2 justify-center"><button onclick="oauthLogin(\'google\')" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm transition-colors">Google</button><button onclick="oauthLogin(\'github\')" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm transition-colors">GitHub</button></div></div><div class="mt-4 p-3 bg-gray-700 rounded text-sm text-gray-300"><strong>Demo Account:</strong><br>Email: demo@animeverse.com<br>Password: demo123</div></div>';
+            document.getElementById('auth-form').addEventListener('submit', function(e) { e.preventDefault(); handleAuth(type); });
+            showModal();
         }
-        
-        // Filter function
+        function handleAuth(type) {
+            const form = document.getElementById('auth-form');
+            const formData = new FormData(form);
+            const data = { email: formData.get('email'), password: formData.get('password'), name: formData.get('name') || '' };
+            fetch('/auth/' + type, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    authToken = data.token;
+                    currentUser = data.user;
+                    localStorage.setItem('auth_token', authToken);
+                    updateAuthUI();
+                    closeModal();
+                    applyFilters();
+                } else {
+                    alert(data.message || 'Authentication failed');
+                }
+            })
+            .catch(error => { console.error('Auth error:', error); alert('Authentication failed'); });
+        }
+        function oauthLogin(provider) { supabase.auth.signInWithOAuth({ provider: provider, options: { redirectTo: window.location.origin } }); }
+        function updateAuthUI() {
+            const signedOut = document.getElementById('signed-out');
+            const signedIn = document.getElementById('signed-in');
+            const userControls = document.getElementById('user-controls');
+            const adminControls = document.getElementById('admin-controls');
+            const userName = document.getElementById('user-name');
+            if (currentUser) {
+                signedOut.classList.add('hidden');
+                signedIn.classList.remove('hidden');
+                userControls.classList.remove('hidden');
+                userName.textContent = currentUser.name || currentUser.email;
+                if (currentUser.role === 'admin') { adminControls.classList.remove('hidden'); }
+            } else {
+                signedOut.classList.remove('hidden');
+                signedIn.classList.add('hidden');
+                userControls.classList.add('hidden');
+                adminControls.classList.add('hidden');
+            }
+        }
+        function importTrending() {
+            if (!authToken) return;
+            fetch('/api/admin/import/trending', { method: 'POST', headers: { 'Authorization': 'Bearer ' + authToken, 'Content-Type': 'application/json' } })
+            .then(response => response.json())
+            .then(data => { alert(data.message || 'Import completed'); applyFilters(); })
+            .catch(error => { console.error('Import error:', error); alert('Import failed'); });
+        }
+        function importSeasonal() {
+            if (!authToken) return;
+            fetch('/api/admin/import/seasonal?year=2024&season=winter', { method: 'POST', headers: { 'Authorization': 'Bearer ' + authToken, 'Content-Type': 'application/json' } })
+            .then(response => response.json())
+            .then(data => { alert(data.message || 'Import completed'); applyFilters(); })
+            .catch(error => { console.error('Import error:', error); alert('Import failed'); });
+        }
+        function addAnimeToList(animeName, status) {
+            if (!authToken) { alert('Please sign in first'); return; }
+            fetch('/api/user/anime', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + authToken, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: animeName, status: status })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Added to ' + status + ' list!');
+                    applyFilters();
+                } else {
+                    alert(data.error || 'Failed to add anime');
+                }
+            })
+            .catch(error => { console.error('Add error:', error); alert('Failed to add anime'); });
+        }
+        function updateAnimeStatus(animeId, status) {
+            if (!authToken) return;
+            fetch('/api/user/anime/' + animeId + '/status', {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + authToken, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: status })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Status updated to ' + status);
+                    applyFilters();
+                }
+            })
+            .catch(error => console.error('Update error:', error));
+        }
+        function searchExternalAnime() {
+            if (!authToken) { alert('Please sign in first'); return; }
+            const query = prompt('Search for anime:');
+            if (!query) return;
+            fetch('/api/user/search?q=' + encodeURIComponent(query), {
+                headers: { 'Authorization': 'Bearer ' + authToken }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data.length > 0) {
+                    let options = 'Found anime:\n';
+                    data.data.forEach((anime, i) => {
+                        options += (i + 1) + '. ' + anime.name + ' (' + anime.year + ')\n';
+                    });
+                    const choice = prompt(options + '\nEnter number to add to Plan to Watch:');
+                    if (choice && data.data[choice - 1]) {
+                        addAnimeToList(data.data[choice - 1].name, 'plan-to-watch');
+                    }
+                } else {
+                    alert('No anime found');
+                }
+            })
+            .catch(error => { console.error('Search error:', error); alert('Search failed'); });
+        }
         function applyFilters() {
             const form = document.getElementById('filter-form');
             const formData = new FormData(form);
             const params = new URLSearchParams();
-            
-            // Add non-empty values to params
             for (let [key, value] of formData.entries()) {
-                if (value.trim() !== '') {
-                    params.append(key, value);
-                }
+                if (value.trim() !== '') { params.append(key, value); }
             }
-            
-            // Show loading
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('anime-grid').style.opacity = '0.5';
-            
-            // Make request
-            fetch('/api/animes/filter?' + params.toString(), {
-                headers: {
-                    'HX-Request': 'true'
-                }
-            })
+            const headers = { 'HX-Request': 'true' };
+            if (authToken) { headers['Authorization'] = 'Bearer ' + authToken; }
+            fetch('/api/animes/filter?' + params.toString(), { headers })
             .then(response => response.text())
             .then(html => {
                 document.getElementById('anime-grid').innerHTML = html;
@@ -698,33 +773,49 @@ func ServeFrontendHandler(w http.ResponseWriter, r *http.Request) {
                 document.getElementById('loading').classList.add('hidden');
             });
         }
-        
-        // Debounced search
         let searchTimeout;
-        function debounceSearch() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(applyFilters, 500);
-        }
-        
-        // Event listeners
-        document.addEventListener('DOMContentLoaded', function() {
-            // Search input
+        function debounceSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(applyFilters, 500); }
+        document.addEventListener('DOMContentLoaded', async function() {
+            authToken = localStorage.getItem('auth_token');
+            if (authToken) {
+                fetch('/api/user/me', { headers: { 'Authorization': 'Bearer ' + authToken } })
+                .then(response => { if (response.ok) { return response.json(); } throw new Error('Invalid token'); })
+                .then(data => { if (data.success) { currentUser = data.data; } updateAuthUI(); })
+                .catch(() => { localStorage.removeItem('auth_token'); authToken = null; updateAuthUI(); });
+            } else {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    authToken = session.access_token;
+                    currentUser = { id: session.user.id, email: session.user.email, name: session.user.user_metadata.full_name || session.user.email };
+                    localStorage.setItem('auth_token', authToken);
+                }
+                updateAuthUI();
+            }
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_IN' && session) {
+                    authToken = session.access_token;
+                    currentUser = { id: session.user.id, email: session.user.email, name: session.user.user_metadata.full_name || session.user.email };
+                    localStorage.setItem('auth_token', authToken);
+                    updateAuthUI();
+                    window.location.reload();
+                } else if (event === 'SIGNED_OUT') {
+                    localStorage.removeItem('auth_token');
+                    authToken = null;
+                    currentUser = null;
+                    updateAuthUI();
+                }
+            });
             document.getElementById('search-input').addEventListener('input', debounceSearch);
-            
-            // Filter selects
             document.getElementById('genre-select').addEventListener('change', applyFilters);
             document.getElementById('year-select').addEventListener('change', applyFilters);
             document.getElementById('season-select').addEventListener('change', applyFilters);
             document.getElementById('format-select').addEventListener('change', applyFilters);
             document.getElementById('status-select').addEventListener('change', applyFilters);
-            
-            // Load initial data
             applyFilters();
         });
     </script>
 </body>
-</html>
-	`))
+</html>`))
 }
 
 func IncrementEpisodeHandler(w http.ResponseWriter, r *http.Request) {
@@ -802,6 +893,58 @@ func ImportSeasonalHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sendJSONResponse(w, http.StatusOK, true, fmt.Sprintf("Imported %d seasonal anime", count), nil, "")
+}
+
+func BackfillDataHandler(w http.ResponseWriter, r *http.Request) {
+	count, err := services.BackfillAllMissingData()
+	if err != nil {
+		sendJSONResponse(w, http.StatusInternalServerError, false, "", nil, "Failed to backfill data: "+err.Error())
+		return
+	}
+	sendJSONResponse(w, http.StatusOK, true, fmt.Sprintf("Backfilled %d anime records", count), nil, "")
+}
+
+func GetCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user")
+	if user == nil {
+		sendJSONResponse(w, http.StatusUnauthorized, false, "", nil, "Not authenticated")
+		return
+	}
+	
+	claims := user.(*middleware.SupabaseClaims)
+	
+	// Get or create user in MongoDB
+	dbUser, err := services.CreateOrUpdateUser(claims.Sub, claims.Email, claims.Name)
+	if err != nil {
+		sendJSONResponse(w, http.StatusInternalServerError, false, "", nil, "Failed to get user data")
+		return
+	}
+	
+	sendJSONResponse(w, http.StatusOK, true, "User retrieved successfully", dbUser, "")
+}
+
+func GetUserStatsHandler(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user")
+	if user == nil {
+		sendJSONResponse(w, http.StatusUnauthorized, false, "", nil, "Not authenticated")
+		return
+	}
+	
+	claims := user.(*middleware.SupabaseClaims)
+	
+	// Update stats first
+	if err := services.UpdateUserStats(claims.Sub); err != nil {
+		sendJSONResponse(w, http.StatusInternalServerError, false, "", nil, "Failed to update user stats")
+		return
+	}
+	
+	stats, err := services.GetUserStats(claims.Sub)
+	if err != nil {
+		sendJSONResponse(w, http.StatusInternalServerError, false, "", nil, "Failed to get user stats")
+		return
+	}
+	
+	sendJSONResponse(w, http.StatusOK, true, "User stats retrieved successfully", stats, "")
 }
 
 func ServeHomeHandler(w http.ResponseWriter, r *http.Request) {

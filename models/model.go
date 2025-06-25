@@ -1,6 +1,7 @@
 package model
 
 import (
+	"time"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -40,9 +41,33 @@ const (
 	Fall   Season = "Fall"
 )
 
+// UserStats represents user statistics
+type UserStats struct {
+	TotalAnimes      int       `json:"total_animes" bson:"total_animes"`
+	CompletedCount   int       `json:"completed_count" bson:"completed_count"`
+	WatchingCount    int       `json:"watching_count" bson:"watching_count"`
+	OnHoldCount      int       `json:"on_hold_count" bson:"on_hold_count"`
+	DroppedCount     int       `json:"dropped_count" bson:"dropped_count"`
+	PlanToWatchCount int       `json:"plan_to_watch_count" bson:"plan_to_watch_count"`
+	LastUpdated      time.Time `json:"last_updated" bson:"last_updated"`
+}
+
+// User represents a user in the system
+type User struct {
+	ID         primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	SupabaseID string             `json:"supabase_id" bson:"supabase_id"`
+	Email      string             `json:"email" bson:"email"`
+	Name       string             `json:"name,omitempty" bson:"name,omitempty"`
+	Role       string             `json:"role" bson:"role"` // "user" or "admin"
+	Stats      UserStats          `json:"stats" bson:"stats"`
+	CreatedAt  time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt  time.Time          `json:"updated_at" bson:"updated_at"`
+}
+
 // Anime struct with improved validation and structure
 type Anime struct {
 	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	UserID    string             `json:"user_id,omitempty" bson:"user_id,omitempty"` // Clerk user ID
 	Name      string             `json:"name" bson:"name" validate:"required,min=1,max=200"`
 	Type      AnimeType          `json:"type,omitempty" bson:"type,omitempty"`
 	Score     int                `json:"score,omitempty" bson:"score,omitempty" validate:"min=0,max=10"` // Rating from 0 to 10
@@ -54,4 +79,6 @@ type Anime struct {
 	ImageUrl  string             `json:"imageUrl,omitempty" bson:"imageUrl,omitempty"`
 	Year      int                `json:"year,omitempty" bson:"year,omitempty"`
 	Season    Season             `json:"season,omitempty" bson:"season,omitempty"`
+	CreatedAt time.Time          `json:"created_at,omitempty" bson:"created_at,omitempty"`
+	UpdatedAt time.Time          `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
 }

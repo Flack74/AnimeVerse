@@ -203,16 +203,24 @@ func GetAllAnimes() []primitive.M {
 	return animes
 }
 
-func FilterAnimes(search, genre, year, season, format, status string) []primitive.M {
+func FilterAnimes(search, genre, year, season, format, status, userID string) []primitive.M {
 	filter := bson.M{}
+	
+	// Add user filter if provided (for user-specific data)
+	if userID != "" {
+		filter["user_id"] = userID
+	}
 	
 	// Build filter with proper field matching
 	if search != "" {
 		filter["name"] = bson.M{"$regex": search, "$options": "i"}
 	}
 	if genre != "" {
-		// Use $in for array fields like genre
-		filter["genre"] = bson.M{"$in": []string{genre}}
+		// Handle both string and array genre fields
+		filter["$or"] = []bson.M{
+			{"genre": bson.M{"$regex": genre, "$options": "i"}}, // String genre
+			{"genre": bson.M{"$in": []string{genre}}},              // Array genre
+		}
 	}
 	if year != "" {
 		if yearInt, err := strconv.Atoi(year); err == nil {
