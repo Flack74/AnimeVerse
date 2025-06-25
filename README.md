@@ -1,4 +1,4 @@
-# 🌸 AnimeVerse API v3.0
+# 🌸 AnimeVerse v3.0
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Flack74/AnimeVerse) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Go Version](https://img.shields.io/badge/go-1.24+-blue)](https://golang.org/) [![Chi Router](https://img.shields.io/badge/router-chi-orange)](https://github.com/go-chi/chi)
 
