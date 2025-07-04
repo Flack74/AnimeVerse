@@ -164,7 +164,6 @@ ADMIN_PASSWORD=secure-password
 
 ### **Public Endpoints**
 ```http
-GET  /api/animes                    # Browse anime (50 per page)
 GET  /api/animes/trending           # Trending anime
 GET  /api/animes/search?q=naruto    # Search anime
 GET  /api/anime/{name}              # Get specific anime details
@@ -344,14 +343,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **HTMX** - For modern web interactions
 - **Tailwind CSS** - For rapid UI development
 - **Docker** - For containerization and deployment
-
----
-
-## 📞 Support
-
-- **GitHub Issues** - Bug reports and feature requests
-- **Documentation** - Comprehensive guides and API docs
-- **Community** - Join discussions and contribute
 
 ---
 
