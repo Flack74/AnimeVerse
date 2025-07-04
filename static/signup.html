@@ -109,7 +109,7 @@
         </div>
     </main>
 
-    <script>
+<!--     <script>
         function showError(message) {
             const errorDiv = document.getElementById('error-message');
             const errorText = document.getElementById('error-text');
@@ -173,6 +173,74 @@
                 submitBtn.disabled = false;
             }
         });
-    </script>
+    </script> -->
+
+    <script>
+    function showError(message) {
+        const errorDiv = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        errorText.textContent = message;
+        errorDiv.classList.remove('hidden');
+    }
+
+    function hideError() {
+        const errorDiv = document.getElementById('error-message');
+        errorDiv.classList.add('hidden');
+    }
+
+    document.getElementById('signup-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const password = formData.get('password');
+        const confirmPassword = formData.get('confirmPassword');
+
+        hideError();
+
+        if (password !== confirmPassword) {
+            showError('Passwords do not match');
+            return;
+        }
+
+        const data = {
+            name: formData.get('name'),
+            email: formData.get('email'),
+            password: password
+        };
+
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = 'Creating Account...';
+        submitBtn.disabled = true;
+
+        try {
+            console.log('📝 Attempting signup:', data.email);
+            const result = await window.authManager.signUp(data.email, data.password, data.name);
+
+            if (result.success) {
+                console.log('✅ Signup successful');
+                submitBtn.innerHTML = '✓ Account Created!';
+                submitBtn.classList.remove('from-secondary', 'to-primary');
+                submitBtn.classList.add('bg-green-500');
+
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
+            } else {
+                console.log('❌ Signup failed:', result.error);
+                showError(result.error || 'Signup failed');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        } catch (error) {
+            console.error('❌ Signup error:', error);
+            showError(error.message || 'Signup failed. Please try again.');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+
+    
 </body>
 </html>
