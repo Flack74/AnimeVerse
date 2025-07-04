@@ -160,12 +160,12 @@
                     setTimeout(() => {
                         window.location.href = '/';
                     }, 1000);
-                // } else {
-                //     console.log('❌ Signup failed:', result.error);
-                //     showError(result.error || 'Signup failed');
-                //     submitBtn.innerHTML = originalText;
-                //     submitBtn.disabled = false;
-                // }
+                } else {
+                    console.log('❌ Signup failed:', result.error);
+                    showError(result.error || 'Signup failed');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
             } catch (error) {
                 console.error('❌ Signup error:', error);
                 showError('Signup failed. Please try again.');
