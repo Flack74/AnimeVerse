@@ -151,24 +151,6 @@
             }
         });
         
-        async function loginDemo() {
-            console.log('🚀 Demo login attempt');
-            hideError();
-            
-            try {
-                const result = await window.authManager.signIn('puspendrachawlax@gmail.com', 'demo123');
-                if (result.success) {
-                    console.log('✅ Demo login successful');
-                    window.location.href = '/';
-                } else {
-                    console.log('❌ Demo login failed:', result.error);
-                    showError('Demo login failed: ' + result.error);
-                }
-            } catch (error) {
-                console.error('❌ Demo login error:', error);
-                showError('Demo login failed. Please try again.');
-            }
-        }
     </script>
 </body>
 </html>
