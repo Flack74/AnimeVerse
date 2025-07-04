@@ -1,0 +1,93 @@
+/* Dark Mode Text Visibility Fixes */
+
+/* Global text fixes */
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    color: rgb(243 244 246) !important; /* gray-100 */
+}
+
+.dark p, .dark span:not(.bg-*):not(.text-white):not(.text-black) {
+    color: rgb(209 213 219) !important; /* gray-300 */
+}
+
+.dark .text-gray-600 {
+    color: rgb(156 163 175) !important; /* gray-400 */
+}
+
+.dark .text-gray-700 {
+    color: rgb(209 213 219) !important; /* gray-300 */
+}
+
+.dark .text-gray-800 {
+    color: rgb(243 244 246) !important; /* gray-100 */
+}
+
+.dark .text-gray-900 {
+    color: rgb(255 255 255) !important; /* white */
+}
+
+/* Form elements */
+.dark input, .dark select, .dark textarea {
+    background-color: rgb(55 65 81) !important; /* gray-700 */
+    color: rgb(243 244 246) !important; /* gray-100 */
+    border-color: rgb(75 85 99) !important; /* gray-600 */
+}
+
+.dark input::placeholder {
+    color: rgb(156 163 175) !important; /* gray-400 */
+}
+
+/* Navigation links */
+.dark nav a {
+    color: rgb(209 213 219) !important; /* gray-300 */
+}
+
+.dark nav a:hover {
+    color: rgb(99 102 241) !important; /* primary */
+}
+
+/* Cards and containers */
+.dark .bg-white {
+    background-color: rgb(31 41 55) !important; /* gray-800 */
+}
+
+.dark .bg-gray-50 {
+    background-color: rgb(17 24 39) !important; /* gray-900 */
+}
+
+.dark .bg-gray-100 {
+    background-color: rgb(55 65 81) !important; /* gray-700 */
+}
+
+/* Buttons */
+.dark button:not(.bg-primary):not(.bg-gradient-to-r):not(.bg-red-600):not(.bg-green-600):not(.bg-blue-600) {
+    background-color: rgb(55 65 81) !important; /* gray-700 */
+    color: rgb(243 244 246) !important; /* gray-100 */
+}
+
+/* Schedule and content sections */
+.dark .schedule-day-btn {
+    background-color: rgb(55 65 81) !important; /* gray-700 */
+    color: rgb(209 213 219) !important; /* gray-300 */
+}
+
+.dark .schedule-day-btn.bg-primary {
+    background-color: rgb(99 102 241) !important; /* primary */
+    color: white !important;
+}
+
+/* Anime cards */
+.dark .anime-card h3 {
+    color: rgb(243 244 246) !important; /* gray-100 */
+}
+
+.dark .anime-card p {
+    color: rgb(156 163 175) !important; /* gray-400 */
+}
+
+/* Logo color fix for dark mode */
+.dark .bg-gradient-to-r.from-primary.to-secondary {
+    background: linear-gradient(to right, rgb(147 197 253), rgb(251 113 133)) !important; /* blue-300 to pink-300 */
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+}

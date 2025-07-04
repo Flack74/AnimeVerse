@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Flack74/mongoapi/middleware"
-	model "github.com/Flack74/mongoapi/models"
-	"github.com/Flack74/mongoapi/services"
+	"animeverse/middleware"
+	model "animeverse/models"
+	"animeverse/services"
 	"github.com/go-chi/chi/v5"
 )
 

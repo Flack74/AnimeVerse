@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Anime - AnimeVerse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/js/simple-auth.js"></script>
+    <script src="/static/js/simple-theme.js"></script>
+    <script src="/static/js/enhanced-ui.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#6366f1',
+                        'secondary': '#ec4899',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors">
+    <!-- Header -->
+    <header class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b border-gray-200 dark:border-gray-700 transition-colors">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/" class="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    🌸 ANIMEVERSE
+                </a>
+                <div class="flex items-center space-x-6">
+                    <nav class="flex space-x-6">
+                        <a href="/" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Home</a>
+                        <a href="/static/browse.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Browse</a>
+                        <a href="/static/trending.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Trending</a>
+                        <a href="/static/search.html" class="text-primary font-semibold">Search</a>
+                    </nav>
+                    <button onclick="toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">
+                        <span id="theme-icon">🌙</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 sm:px-6 py-8">
+        <!-- Search Hero -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold text-gray-800 dark:text-gray-100 mb-4">🔍 Search Anime</h1>
+            <p class="text-xl text-gray-600 dark:text-gray-300 mb-8">Discover your next favorite anime</p>
+            
+            <!-- Enhanced Search Bar -->
+            <div class="max-w-2xl mx-auto relative">
+                <input 
+                    type="text" 
+                    id="search-input" 
+                    placeholder="Search for anime titles, genres, or characters..."
+                    class="w-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-2xl px-6 py-4 text-lg text-gray-700 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-primary transition-all shadow-lg"
+                >
+                <button onclick="performSearch()" class="absolute right-2 top-2 bg-gradient-to-r from-primary to-secondary text-white px-6 py-2 rounded-xl hover:shadow-lg transition-all">
+                    Search
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Filters -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8 transition-colors">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Quick Filters</h3>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="quickSearch('action')" class="px-4 py-2 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition-colors">Action</button>
+                <button onclick="quickSearch('romance')" class="px-4 py-2 bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200 rounded-lg hover:bg-pink-200 dark:hover:bg-pink-800 transition-colors">Romance</button>
+                <button onclick="quickSearch('comedy')" class="px-4 py-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 transition-colors">Comedy</button>
+                <button onclick="quickSearch('drama')" class="px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors">Drama</button>
+                <button onclick="quickSearch('fantasy')" class="px-4 py-2 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors">Fantasy</button>
+                <button onclick="quickSearch('slice of life')" class="px-4 py-2 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors">Slice of Life</button>
+            </div>
+        </div>
+
+        <!-- Search Results -->
+        <div id="search-results" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <!-- Results will appear here -->
+        </div>
+
+        <!-- No Results State -->
+        <div id="no-results" class="text-center py-20 hidden">
+            <div class="text-6xl mb-4">🤔</div>
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">No results found</h3>
+            <p class="text-gray-600 dark:text-gray-400">Try different keywords or browse our collection</p>
+        </div>
+
+        <!-- Initial State -->
+        <div id="initial-state" class="text-center py-20">
+            <div class="text-6xl mb-4">🎬</div>
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Start searching</h3>
+            <p class="text-gray-600 dark:text-gray-400">Enter a title, genre, or character name to find anime</p>
+        </div>
+    </main>
+
+    <script>
+        let searchTimeout;
+
+        function performSearch() {
+            const query = document.getElementById('search-input').value.trim();
+            if (query.length < 2) {
+                showToast('Please enter at least 2 characters', 'error');
+                return;
+            }
+            searchAnime(query);
+        }
+
+        function quickSearch(genre) {
+            document.getElementById('search-input').value = genre;
+            searchAnime(genre);
+        }
+
+        async function searchAnime(query) {
+            const resultsContainer = document.getElementById('search-results');
+            const noResults = document.getElementById('no-results');
+            const initialState = document.getElementById('initial-state');
+
+            // Hide states
+            noResults.classList.add('hidden');
+            initialState.classList.add('hidden');
+
+            // Show loading
+            resultsContainer.innerHTML = createSkeleton(12);
+
+            try {
+                const response = await fetch('https://graphql.anilist.co', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: `{
+                            Page(page: 1, perPage: 24) {
+                                media(search: "${query}", type: ANIME) {
+                                    id
+                                    title { romaji english }
+                                    coverImage { large }
+                                    averageScore
+                                    startDate { year }
+                                    genres
+                                    format
+                                    status
+                                    description(asHtml: false)
+                                }
+                            }
+                        }`
+                    })
+                });
+
+                const data = await response.json();
+                const animes = data.data?.Page?.media || [];
+
+                if (animes.length === 0) {
+                    resultsContainer.innerHTML = '';
+                    noResults.classList.remove('hidden');
+                    return;
+                }
+
+                const html = animes.map(anime => {
+                    const title = anime.title.english || anime.title.romaji;
+                    const score = anime.averageScore ? (anime.averageScore / 10).toFixed(1) : 'N/A';
+                    const year = anime.startDate?.year || 'Unknown';
+
+                    return `
+                        <div onclick="showAnimeModal('${title}')" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all cursor-pointer transform hover:scale-105 anime-card">
+                            <div class="relative">
+                                <img src="${anime.coverImage.large}" alt="${title}" class="w-full h-64 object-cover">
+                                <div class="absolute top-2 right-2 bg-yellow-500 text-black px-2 py-1 rounded text-xs font-bold">
+                                    ⭐ ${score}
+                                </div>
+                                <div class="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">
+                                    ${anime.format || 'TV'}
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-1 truncate">${title}</h3>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs">${year} • ${anime.status || 'Unknown'}</p>
+                                ${anime.genres ? `<div class="flex flex-wrap gap-1 mt-2">${anime.genres.slice(0, 2).map(g => `<span class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded text-xs">${g}</span>`).join('')}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                resultsContainer.innerHTML = html;
+                showToast(`Found ${animes.length} results for "${query}"`);
+
+            } catch (error) {
+                console.error('Search error:', error);
+                resultsContainer.innerHTML = '';
+                noResults.classList.remove('hidden');
+                showToast('Search failed. Please try again.', 'error');
+            }
+        }
+
+        function showAnimeModal(animeName) {
+            window.location.href = `/static/anime-detail.html?name=${encodeURIComponent(animeName)}`;
+        }
+
+        // Enhanced search with debounce
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+            
+            if (query.length >= 3) {
+                searchTimeout = setTimeout(() => searchAnime(query), 500);
+            } else if (query.length === 0) {
+                document.getElementById('search-results').innerHTML = '';
+                document.getElementById('no-results').classList.add('hidden');
+                document.getElementById('initial-state').classList.remove('hidden');
+            }
+        });
+
+        // Enter key search
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+    </script>
+</body>
+</html>

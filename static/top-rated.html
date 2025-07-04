@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Rated Anime - AnimeVerse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/dark-mode-fix.css">
+    <script src="/static/js/simple-theme.js"></script>
+    <script src="/static/js/enhanced-ui.js"></script>
+    <script src="/static/js/supabase.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#6366f1',
+                        'secondary': '#ec4899',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors">
+    <!-- Header -->
+    <header class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b border-gray-200 dark:border-gray-700 transition-colors">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/" class="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    🌸 ANIMEVERSE
+                </a>
+                <div class="flex items-center space-x-6">
+                    <nav class="flex space-x-6">
+                        <a href="/" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Home</a>
+                        <a href="/static/browse.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Browse</a>
+                        <a href="/static/trending.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Trending</a>
+                        <a href="/static/top-rated.html" class="text-primary font-semibold">Top Rated</a>
+                    </nav>
+                    <button onclick="toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">
+                        <span id="theme-icon">🌙</span>
+                    </button>
+                    <div id="signed-out" class="flex items-center space-x-3">
+                        <a href="/static/login.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Sign In</a>
+                        <a href="/static/signup.html" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors">Sign Up</a>
+                    </div>
+                    <div id="signed-in" class="hidden items-center space-x-3">
+                        <a href="/static/my-list.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">My List</a>
+                        <a href="/static/profile.html" class="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center hover:shadow-lg transition-all" title="My Profile">
+                            <span id="user-avatar" class="text-white text-sm font-bold">U</span>
+                        </a>
+                        <span id="user-name" class="text-gray-700 dark:text-gray-300 font-medium">User</span>
+                        <button onclick="signOut()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm">Sign Out</button>
+                    </div>
+                    <div id="signed-out" class="flex items-center space-x-3">
+                        <a href="/static/login.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Sign In</a>
+                        <a href="/static/signup.html" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors">Sign Up</a>
+                    </div>
+                    <div id="signed-in" class="hidden items-center space-x-3">
+                        <a href="/static/my-list.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">My List</a>
+                        <a href="/static/profile.html" class="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center hover:shadow-lg transition-all" title="My Profile">
+                            <span id="user-avatar" class="text-white text-sm font-bold">U</span>
+                        </a>
+                        <span id="user-name" class="text-gray-700 dark:text-gray-300 font-medium">User</span>
+                        <button onclick="signOut()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm">Sign Out</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 sm:px-6 py-8">
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-4">⭐ Top Rated Anime</h1>
+            <p class="text-gray-600 dark:text-gray-300">Highest rated anime of all time</p>
+        </div>
+
+        <!-- Top Rated Grid -->
+        <div id="top-rated-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <!-- Loading skeleton -->
+        </div>
+
+        <!-- Load More Button -->
+        <div class="text-center mt-8">
+            <button id="load-more-btn" onclick="loadMore()" class="bg-gradient-to-r from-primary to-secondary text-white px-8 py-3 rounded-full font-semibold hover:shadow-lg transform hover:-translate-y-1 transition-all">
+                Load More Top Rated
+            </button>
+        </div>
+    </main>
+
+    <script>
+        let currentPage = 1;
+        let isLoading = false;
+        const topRatedCache = new Map();
+
+        async function loadTopRated(page = 1, append = false) {
+            if (isLoading) return;
+            isLoading = true;
+
+            const cacheKey = `top_rated_${page}`;
+            
+            if (topRatedCache.has(cacheKey)) {
+                const cachedData = topRatedCache.get(cacheKey);
+                renderTopRated(cachedData, append);
+                isLoading = false;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/fast/top-rated?page=${page}`);
+
+                const data = await response.json();
+                const animes = data.success ? data.data : [];
+                
+                topRatedCache.set(cacheKey, animes);
+                renderTopRated(animes, append);
+                isLoading = false;
+            } catch (error) {
+                console.error('Error loading top rated:', error);
+                document.getElementById('top-rated-grid').innerHTML = '<div class="col-span-full text-center py-20 text-red-500">Failed to load top rated anime</div>';
+                isLoading = false;
+            }
+        }
+
+        function renderTopRated(animes, append) {
+            if (animes.length === 0) {
+                if (!append) {
+                    document.getElementById('top-rated-grid').innerHTML = '<div class="col-span-full text-center py-20 text-gray-500 dark:text-gray-400">No top rated anime found</div>';
+                }
+                return;
+            }
+
+            const html = animes.map((anime, index) => {
+                const title = anime.name || 'Unknown';
+                const score = anime.score ? anime.score.toFixed(1) : 'N/A';
+                const year = anime.year || 'Unknown';
+                const rank = append ? '' : ((currentPage - 1) * 24 + index + 1);
+
+                return `
+                    <div onclick="showAnimeModal('${title}')" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all cursor-pointer transform hover:scale-105 anime-card">
+                        <div class="relative">
+                            <img loading="lazy" src="${anime.imageUrl}" alt="${title}" class="w-full h-64 object-cover">
+                            ${!append && rank ? `<div class="absolute top-2 left-2 bg-yellow-500 text-black px-2 py-1 rounded-full text-xs font-bold">#${rank}</div>` : ''}
+                            <div class="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">
+                                ⭐ ${score}
+                            </div>
+                            ${anime.information?.status === 'RELEASING' ? '<div class="absolute bottom-2 right-2 bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">AIRING</div>' : ''}
+                        </div>
+                        <div class="p-3">
+                            <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-1 truncate">${title}</h3>
+                            <p class="text-gray-500 dark:text-gray-400 text-xs">${year} • ${anime.type || 'TV'} • ${anime.information?.episodes || '?'} eps</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (append) {
+                document.getElementById('top-rated-grid').innerHTML += html;
+            } else {
+                document.getElementById('top-rated-grid').innerHTML = html;
+            }
+        }
+
+        function loadMore() {
+            currentPage++;
+            loadTopRated(currentPage, true);
+        }
+
+        function showAnimeModal(animeName) {
+            window.location.href = `/static/anime-detail.html?name=${encodeURIComponent(animeName)}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const grid = document.getElementById('top-rated-grid');
+            grid.innerHTML = Array(12).fill(0).map(() => 
+                '<div class="bg-gray-200 dark:bg-gray-700 rounded-xl h-80 animate-pulse"></div>'
+            ).join('');
+            loadTopRated(1);
+        });
+    </script>
+</body>
+</html>

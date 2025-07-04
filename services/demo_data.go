@@ -3,7 +3,7 @@ package services
 import (
 	"time"
 
-	model "github.com/Flack74/mongoapi/models"
+	model "animeverse/models"
 )
 
 func SeedDemoUserData(userID string) error {

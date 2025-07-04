@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Flack74/mongoapi/config"
+	"animeverse/config"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -97,28 +97,30 @@ func BackfillAnimeData(animeName string) error {
 	// Update MongoDB record with missing data
 	filter := bson.M{"name": bson.M{"$regex": "^" + animeName + "$", "$options": "i"}}
 	
-	update := bson.M{"$set": bson.M{}}
+	updateFields := bson.M{}
 	
 	if anilistData.Data.Media.StartDate.Year > 0 {
-		update["$set"].(bson.M)["year"] = anilistData.Data.Media.StartDate.Year
+		updateFields["year"] = anilistData.Data.Media.StartDate.Year
 	}
 	
 	if anilistData.Data.Media.Season != "" {
 		season := strings.Title(strings.ToLower(anilistData.Data.Media.Season))
-		update["$set"].(bson.M)["season"] = season
+		updateFields["season"] = season
 	}
 	
 	if anilistData.Data.Media.CoverImage.Large != "" {
-		update["$set"].(bson.M)["imageUrl"] = anilistData.Data.Media.CoverImage.Large
+		updateFields["imageUrl"] = anilistData.Data.Media.CoverImage.Large
 	}
 	
 	if anilistData.Data.Media.BannerImage != "" {
-		update["$set"].(bson.M)["bannerUrl"] = anilistData.Data.Media.BannerImage
+		updateFields["bannerUrl"] = anilistData.Data.Media.BannerImage
 	}
 	
 	if len(anilistData.Data.Media.Genres) > 0 {
-		update["$set"].(bson.M)["genre"] = anilistData.Data.Media.Genres
+		updateFields["genre"] = anilistData.Data.Media.Genres
 	}
+	
+	update := bson.M{"$set": updateFields}
 
 	_, err = config.Collection.UpdateOne(context.Background(), filter, update)
 	return err

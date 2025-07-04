@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	model "github.com/Flack74/mongoapi/models"
+	model "animeverse/models"
 )
 
 type JikanAnime struct {
@@ -95,7 +95,7 @@ func importAnimeList(jikanAnimes []JikanAnime) (int, error) {
 		anime := model.Anime{
 			Name:      ja.Title,
 			Type:      model.AnimeType(ja.Type),
-			Score:     int(ja.Score),
+			Score:     float64(ja.Score),
 			Status:    "plan-to-watch",
 			Genre:     genres,
 			Notes:     truncateString(ja.Synopsis, 500),

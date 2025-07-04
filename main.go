@@ -10,8 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Flack74/mongoapi/config"
-	"github.com/Flack74/mongoapi/router"
+	"animeverse/cache"
+	"animeverse/config"
+	"animeverse/router"
+	"animeverse/services"
 )
 
 func main() {
@@ -19,6 +21,12 @@ func main() {
 
 	// Connect to MongoDB
 	config.ConnectDB()
+	
+	// Initialize Redis cache
+	cache.InitRedis()
+	
+	// Initialize image collection
+	services.InitImageCollection()
 
 	// Setup router
 	r := router.Router()

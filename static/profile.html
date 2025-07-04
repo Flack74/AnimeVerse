@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - AnimeVerse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/dark-mode-fix.css">
+    <script src="/static/js/simple-theme.js"></script>
+    <script src="/static/js/enhanced-ui.js"></script>
+    <script src="/static/js/supabase.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#6366f1',
+                        'secondary': '#ec4899',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors">
+    <!-- Header -->
+    <header class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b border-gray-200 dark:border-gray-700 transition-colors">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/" class="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    🌸 ANIMEVERSE
+                </a>
+                <div class="flex items-center space-x-6">
+                    <nav class="flex space-x-6">
+                        <a href="/" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Home</a>
+                        <a href="/static/browse.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Browse</a>
+                        <a href="/static/my-list.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">My List</a>
+                        <a href="/static/profile.html" class="text-primary font-semibold">Profile</a>
+                    </nav>
+                    <button onclick="toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">
+                        <span id="theme-icon">🌙</span>
+                    </button>
+                    <div id="signed-in" class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center">
+                            <span id="user-avatar" class="text-white text-sm font-bold">U</span>
+                        </div>
+                        <span id="user-name" class="text-gray-700 dark:text-gray-300 font-medium">User</span>
+                        <button onclick="signOut()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm">Sign Out</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 sm:px-6 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Profile Header -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 mb-8 transition-colors">
+                <div class="flex items-center space-x-6">
+                    <div class="relative">
+                        <div id="avatar-container" class="w-24 h-24 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center overflow-hidden">
+                            <span id="profile-avatar" class="text-white text-3xl font-bold">U</span>
+                            <img id="profile-avatar-img" class="w-full h-full object-cover hidden" alt="Profile Avatar">
+                        </div>
+                        <button onclick="changeAvatar()" class="absolute -bottom-2 -right-2 bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-indigo-600 transition-colors">
+                            📷
+                        </button>
+                        <input type="file" id="avatar-upload" accept="image/*" class="hidden" onchange="handleAvatarUpload(event)">
+                    </div>
+                    <div class="flex-1">
+                        <h1 id="profile-name" class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Loading...</h1>
+                        <p id="profile-email" class="text-gray-600 dark:text-gray-400 mb-4">Loading...</p>
+                        <p id="profile-bio" class="text-gray-700 dark:text-gray-300">No bio yet</p>
+                    </div>
+                    <button onclick="editProfile()" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-indigo-600 transition-colors">
+                        Edit Profile
+                    </button>
+                </div>
+            </div>
+
+            <!-- Anime Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+                    <div class="text-2xl font-bold" id="total-anime">0</div>
+                    <div class="text-blue-100">Total Anime</div>
+                </div>
+                <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white">
+                    <div class="text-2xl font-bold" id="completed-anime">0</div>
+                    <div class="text-green-100">Completed</div>
+                </div>
+                <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
+                    <div class="text-2xl font-bold" id="watching-anime">0</div>
+                    <div class="text-yellow-100">Watching</div>
+                </div>
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+                    <div class="text-2xl font-bold" id="avg-score">0</div>
+                    <div class="text-purple-100">Avg Score</div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 transition-colors">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Recent Activity</h2>
+                <div id="recent-activity" class="space-y-4">
+                    <div class="text-gray-500 dark:text-gray-400">Loading recent activity...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Edit Profile</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Display Name</label>
+                    <input type="text" id="edit-display-name" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bio</label>
+                    <textarea id="edit-bio" rows="3" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100" placeholder="Tell us about yourself..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Favorite Genres</label>
+                    <input type="text" id="edit-genres" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100" placeholder="Action, Romance, Comedy...">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avatar</label>
+                    <div class="flex items-center space-x-4">
+                        <div id="edit-avatar-container" class="w-16 h-16 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center overflow-hidden">
+                            <span id="edit-profile-avatar" class="text-white text-xl font-bold">U</span>
+                            <img id="edit-profile-avatar-img" class="w-full h-full object-cover hidden" alt="Profile Avatar">
+                        </div>
+                        <button type="button" onclick="document.getElementById('edit-avatar-upload').click()" class="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                            Change Avatar
+                        </button>
+                        <input type="file" id="edit-avatar-upload" accept="image/*" class="hidden" onchange="handleEditAvatarUpload(event)">
+                    </div>
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button onclick="closeEditModal()" class="flex-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
+                <button onclick="saveProfile()" class="flex-1 bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition-colors">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentProfile = null;
+
+        async function loadProfile() {
+            // Wait a bit for auth manager to initialize
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            if (!window.authManager || !window.authManager.isAuthenticated()) {
+                console.log('❌ Profile access denied - not authenticated');
+                alert('Please log in to view your profile');
+                window.location.href = '/static/login.html';
+                return;
+            }
+
+            const user = window.authManager.getUser();
+            if (!user) {
+                console.log('❌ Profile access denied - no user data');
+                alert('User data not found. Please log in again.');
+                window.location.href = '/static/login.html';
+                return;
+            }
+            
+            console.log('✅ Profile access granted for:', user.email);
+            console.log('👤 User metadata:', user.user_metadata);
+
+            // Update profile display
+            const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+            const bio = user.user_metadata?.bio || 'Welcome to your AnimeVerse profile!';
+            
+            document.getElementById('profile-name').textContent = displayName;
+            document.getElementById('profile-email').textContent = user.email;
+            document.getElementById('profile-bio').textContent = bio;
+            
+            // Store current profile data
+            currentProfile = {
+                display_name: displayName,
+                bio: bio,
+                favorite_genres: user.user_metadata?.favorite_genres || [],
+                avatar_url: user.user_metadata?.avatar_url || ''
+            };
+            
+            // Update avatar
+            document.getElementById('profile-avatar').textContent = displayName.charAt(0).toUpperCase();
+            
+            // Update avatar image if available
+            if (currentProfile.avatar_url) {
+                document.getElementById('profile-avatar-img').src = currentProfile.avatar_url;
+                document.getElementById('profile-avatar-img').classList.remove('hidden');
+                document.getElementById('profile-avatar').classList.add('hidden');
+            }
+
+            // Load anime stats
+            loadAnimeStats();
+            loadRecentActivity();
+        }
+
+        async function loadAnimeStats() {
+            try {
+                const animeList = await window.authManager.getUserAnimeList();
+                
+                const stats = animeList.reduce((acc, anime) => {
+                    acc[anime.status] = (acc[anime.status] || 0) + 1;
+                    if (anime.user_score) {
+                        acc.totalScore += anime.user_score;
+                        acc.scoredCount++;
+                    }
+                    return acc;
+                }, { totalScore: 0, scoredCount: 0 });
+
+                document.getElementById('total-anime').textContent = animeList.length;
+                document.getElementById('completed-anime').textContent = stats.completed || 0;
+                document.getElementById('watching-anime').textContent = stats.watching || 0;
+                document.getElementById('avg-score').textContent = stats.scoredCount > 0 ? (stats.totalScore / stats.scoredCount).toFixed(1) : '0';
+            } catch (error) {
+                console.log('Could not load anime stats:', error);
+                document.getElementById('total-anime').textContent = '0';
+                document.getElementById('completed-anime').textContent = '0';
+                document.getElementById('watching-anime').textContent = '0';
+                document.getElementById('avg-score').textContent = '0';
+            }
+        }
+
+        async function loadRecentActivity() {
+            try {
+                const animeList = await window.authManager.getUserAnimeList();
+                const recent = animeList.slice(0, 5);
+
+                if (recent.length === 0) {
+                    document.getElementById('recent-activity').innerHTML = '<div class="text-gray-500 dark:text-gray-400">No anime in your list yet. <a href="/static/browse.html" class="text-primary hover:underline">Start browsing!</a></div>';
+                    return;
+                }
+
+                const html = recent.map(anime => `
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div>
+                            <div class="font-semibold text-gray-900 dark:text-gray-100">${anime.anime_name}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                ${anime.status.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                ${anime.episodes_watched > 0 ? ` • ${anime.episodes_watched}/${anime.total_episodes || '?'} episodes` : ''}
+                                ${anime.user_score ? ` • Score: ${anime.user_score}/10` : ''}
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-400">
+                            ${new Date(anime.added_at).toLocaleDateString()}
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('recent-activity').innerHTML = html;
+            } catch (error) {
+                console.log('Could not load recent activity:', error);
+                document.getElementById('recent-activity').innerHTML = '<div class="text-gray-500 dark:text-gray-400">Could not load recent activity</div>';
+            }
+        }
+
+        function editProfile() {
+            const user = window.authManager.getUser();
+            if (!user) return;
+            
+            // Populate edit form with current data
+            document.getElementById('edit-display-name').value = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+            document.getElementById('edit-bio').value = currentProfile?.bio || 'Welcome to your AnimeVerse profile!';
+            document.getElementById('edit-genres').value = currentProfile?.favorite_genres?.join(', ') || '';
+            
+            // Show modal
+            document.getElementById('edit-profile-modal').classList.remove('hidden');
+            document.getElementById('edit-profile-modal').classList.add('flex');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-profile-modal').classList.add('hidden');
+            document.getElementById('edit-profile-modal').classList.remove('flex');
+        }
+
+        let currentAvatarUrl = '';
+        
+        function changeAvatar() {
+            document.getElementById('avatar-upload').click();
+        }
+        
+        function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Check file size (max 2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('File size must be less than 2MB');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentAvatarUrl = e.target.result;
+                    
+                    // Update profile avatar display
+                    const profileImg = document.getElementById('profile-avatar-img');
+                    const profileText = document.getElementById('profile-avatar');
+                    
+                    if (profileImg && profileText) {
+                        profileImg.src = currentAvatarUrl;
+                        profileImg.classList.remove('hidden');
+                        profileText.classList.add('hidden');
+                    }
+                    
+                    // Save avatar immediately
+                    saveAvatarOnly();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function handleEditAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentAvatarUrl = e.target.result;
+                    document.getElementById('edit-profile-avatar-img').src = currentAvatarUrl;
+                    document.getElementById('edit-profile-avatar-img').classList.remove('hidden');
+                    document.getElementById('edit-profile-avatar').classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        async function saveAvatarOnly() {
+            try {
+                const user = window.authManager.getUser();
+                
+                // Update user metadata in Supabase
+                const response = await fetch(`https://nnjjmlvhbejtrkmrajoz.supabase.co/auth/v1/user`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5uamptbHZoYmVqdHJrbXJham96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MTMzMDMsImV4cCI6MjA2NzE4OTMwM30.ACROHWi6_1_w2a3vGLp4JR50D3IvPVzWzrSnv-lXCvE',
+                        'Authorization': `Bearer ${window.authManager.session.access_token}`
+                    },
+                    body: JSON.stringify({
+                        data: {
+                            ...user.user_metadata,
+                            avatar_url: currentAvatarUrl
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    // Update local user data
+                    window.authManager.user.user_metadata = {
+                        ...window.authManager.user.user_metadata,
+                        avatar_url: currentAvatarUrl
+                    };
+                    
+                    // Update session storage
+                    window.authManager.session.user = window.authManager.user;
+                    localStorage.setItem('sb_session', JSON.stringify(window.authManager.session));
+                    
+                    // Update current profile
+                    if (currentProfile) {
+                        currentProfile.avatar_url = currentAvatarUrl;
+                    }
+                    
+                    // Force UI update on all pages
+                    window.authManager.forceUIUpdate();
+                    
+                    if (window.showToast) {
+                        window.showToast('Avatar updated!');
+                    } else {
+                        alert('Avatar updated!');
+                    }
+                } else {
+                    throw new Error('Failed to update avatar');
+                }
+            } catch (error) {
+                console.error('Avatar update error:', error);
+                if (window.showToast) {
+                    window.showToast('Failed to update avatar', 'error');
+                } else {
+                    alert('Failed to update avatar');
+                }
+            }
+        }
+
+        async function saveProfile() {
+            const displayName = document.getElementById('edit-display-name').value;
+            const bio = document.getElementById('edit-bio').value;
+            const genres = document.getElementById('edit-genres').value.split(',').map(g => g.trim()).filter(g => g);
+
+            try {
+                // Update user metadata in Supabase auth
+                const user = window.authManager.getUser();
+                const response = await fetch(`https://nnjjmlvhbejtrkmrajoz.supabase.co/auth/v1/user`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5uamptbHZoYmVqdHJrbXJham96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MTMzMDMsImV4cCI6MjA2NzE4OTMwM30.ACROHWi6_1_w2a3vGLp4JR50D3IvPVzWzrSnv-lXCvE',
+                        'Authorization': `Bearer ${window.authManager.session.access_token}`
+                    },
+                    body: JSON.stringify({
+                        data: {
+                            full_name: displayName,
+                            bio: bio,
+                            favorite_genres: genres
+                        }
+                    })
+                });
+
+                if (response.ok) {
+                    // Update local user data
+                    window.authManager.user.user_metadata = {
+                        ...window.authManager.user.user_metadata,
+                        full_name: displayName,
+                        bio: bio,
+                        favorite_genres: genres
+                    };
+                    
+                    // Update session storage
+                    window.authManager.session.user = window.authManager.user;
+                    localStorage.setItem('sb_session', JSON.stringify(window.authManager.session));
+                    
+                    // Update current profile
+                    currentProfile = {
+                        display_name: displayName,
+                        bio: bio,
+                        favorite_genres: genres,
+                        avatar_url: currentAvatarUrl || currentProfile?.avatar_url || ''
+                    };
+                    
+                    if (window.showToast) {
+                        window.showToast('Profile updated successfully!');
+                    } else {
+                        alert('Profile updated successfully!');
+                    }
+                    
+                    closeEditModal();
+                    loadProfile(); // Reload profile
+                    
+                    // Force UI update across all pages
+                    window.authManager.forceUIUpdate();
+                } else {
+                    throw new Error('Failed to update profile');
+                }
+            } catch (error) {
+                console.error('Profile update error:', error);
+                if (window.showToast) {
+                    window.showToast(error.message || 'Failed to update profile', 'error');
+                } else {
+                    alert('Error: ' + (error.message || 'Failed to update profile'));
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📝 Profile page loading...');
+            loadProfile();
+        });
+    </script>
+</body>
+</html>

@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 
-	"github.com/Flack74/mongoapi/config"
-	model "github.com/Flack74/mongoapi/models"
+	"animeverse/config"
+	model "animeverse/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

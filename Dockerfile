@@ -62,8 +62,9 @@ WORKDIR /
 COPY --from=build-production /etc/passwd /etc/passwd
 COPY --from=build-production /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-# copy the API binary
+# copy the API binary and static files
 COPY --from=build-production /animeverse-api /animeverse-api
+COPY --from=build-production /src/static /static
 
 USER nonroot
 

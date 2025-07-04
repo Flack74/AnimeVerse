@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Anime - AnimeVerse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/dark-mode-fix.css">
+    <script src="/static/js/simple-theme.js"></script>
+    <script src="/static/js/enhanced-ui.js"></script>
+    <script src="/static/js/supabase.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#6366f1',
+                        'secondary': '#ec4899',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors">
+    <!-- Header -->
+    <header class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm shadow-sm sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700 transition-colors">
+        <div class="container mx-auto px-4 sm:px-6 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/" class="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    🌸 ANIMEVERSE
+                </a>
+                <div class="flex items-center space-x-6">
+                    <nav class="flex space-x-6">
+                        <a href="/" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Home</a>
+                        <a href="/static/browse.html" class="text-primary font-semibold">Browse</a>
+                        <a href="/static/trending.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Trending</a>
+                        <a href="/static/top-rated.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Top Rated</a>
+                    </nav>
+                    <button onclick="toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">
+                        <span id="theme-icon">🌙</span>
+                    </button>
+                    <div id="signed-out" class="flex items-center space-x-3">
+                        <a href="/static/login.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Sign In</a>
+                        <a href="/static/signup.html" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors">Sign Up</a>
+                    </div>
+                    <div id="signed-in" class="hidden items-center space-x-3">
+                        <a href="/static/my-list.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">My List</a>
+                        <a href="/static/profile.html" class="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center hover:shadow-lg transition-all" title="My Profile">
+                            <span id="user-avatar" class="text-white text-sm font-bold">U</span>
+                        </a>
+                        <span id="user-name" class="text-gray-700 dark:text-gray-300 font-medium">User</span>
+                        <button onclick="signOut()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm">Sign Out</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 sm:px-6 py-8">
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-4">📚 Browse Anime</h1>
+            <p class="text-gray-600 dark:text-gray-300">Explore our complete collection of anime</p>
+        </div>
+
+        <!-- Advanced Filters -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8 transition-colors">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <select id="genre-filter" class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="">All Genres</option>
+                    <option value="Action">Action</option>
+                    <option value="Adventure">Adventure</option>
+                    <option value="Comedy">Comedy</option>
+                    <option value="Drama">Drama</option>
+                    <option value="Fantasy">Fantasy</option>
+                    <option value="Romance">Romance</option>
+                    <option value="Supernatural">Supernatural</option>
+                </select>
+                <select id="year-filter" class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="">All Years</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                    <option value="2021">2021</option>
+                    <option value="2020">2020</option>
+                    <option value="2019">2019</option>
+                    <option value="2018">2018</option>
+                    <option value="2017">2017</option>
+                    <option value="2016">2016</option>
+                    <option value="2015">2015</option>
+                </select>
+                <select id="status-filter" class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="">All Status</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Airing">Currently Airing</option>
+                    <option value="Not yet aired">Upcoming</option>
+                </select>
+                <select id="sort-filter" class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="">Default Sort</option>
+                    <option value="score">By Rating</option>
+                    <option value="name">By Name</option>
+                    <option value="year">By Year</option>
+                </select>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <input type="text" id="search-input" placeholder="Search anime..." class="flex-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 text-gray-700 dark:text-gray-200 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary">
+                <button onclick="applyFilters()" class="bg-gradient-to-r from-primary to-secondary text-white px-6 py-2 rounded-lg hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+                    🔍 Apply Filters
+                </button>
+                <button onclick="clearFilters()" class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-6 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                    ✨ Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Anime Grid -->
+        <div id="anime-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <!-- Loading will be handled by JavaScript -->
+        </div>
+
+        <!-- Load More Button -->
+        <div class="flex justify-center mt-12 mb-8">
+            <button id="load-more-btn" onclick="loadMore()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-12 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center space-x-2">
+                <span>🚀</span>
+                <span>Load More Anime</span>
+                <span>🚀</span>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        let currentPage = 1;
+        let isLoading = false;
+        let isFiltering = false;
+        const animeCache = new Map();
+        
+        async function loadBrowseAnime(page = 1, append = false) {
+            if (isLoading) return;
+            isLoading = true;
+            
+            const cacheKey = `browse_${page}`;
+            
+            if (animeCache.has(cacheKey)) {
+                const cached = animeCache.get(cacheKey);
+                renderAnimeGrid(cached, append);
+                isLoading = false;
+                return;
+            }
+            
+            try {
+                console.log(`📊 Loading browse page ${page}...`);
+                
+                const response = await fetch(`/api/simple/browse?page=${page}`);
+                const data = await response.json();
+                
+                if (data.success && data.data && Array.isArray(data.data)) {
+                    const animes = data.data;
+                    console.log(`📊 Browse data loaded: ${animes.length} anime from page ${page}`);
+                    
+                    animeCache.set(cacheKey, animes);
+                    renderAnimeGrid(animes, append);
+                } else {
+                    throw new Error('No data received');
+                }
+                
+                isLoading = false;
+            } catch (error) {
+                console.error('Error loading anime:', error);
+                document.getElementById('anime-grid').innerHTML = '<div class="col-span-full text-center py-20 text-red-500 dark:text-red-400">Failed to load anime. Please try again.</div>';
+                isLoading = false;
+            }
+        }
+        
+        function renderAnimeGrid(animes, append) {
+            if (animes.length === 0) {
+                if (!append) {
+                    document.getElementById('anime-grid').innerHTML = '<div class="col-span-full text-center py-20 text-gray-500 dark:text-gray-400">No anime found</div>';
+                }
+                return;
+            }
+            
+            const isLoggedIn = window.authManager?.isAuthenticated() || false;
+            
+            const html = animes.map(anime => {
+                const title = anime.title?.english || anime.title?.romaji || anime.name || 'Unknown';
+                const score = anime.averageScore ? (anime.averageScore / 10).toFixed(1) : (anime.score ? anime.score.toFixed(1) : 'N/A');
+                const year = anime.startDate?.year || anime.year || 'Unknown';
+                const imageUrl = anime.coverImage?.extraLarge || anime.coverImage?.large || anime.imageUrl || '';
+                
+                return `
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all anime-card">
+                        <div class="relative" onclick="showAnimeModal('${title}')" style="cursor: pointer;">
+                            <img loading="lazy" src="${imageUrl}" alt="${title}" class="w-full h-64 object-cover">
+                            <div class="absolute top-2 right-2 bg-yellow-500 text-black px-2 py-1 rounded text-xs font-bold">
+                                ⭐ ${score}
+                            </div>
+                        </div>
+                        <div class="p-3">
+                            <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-1 truncate">${title}</h3>
+                            <p class="text-gray-500 dark:text-gray-400 text-xs ${isLoggedIn ? 'mb-2' : ''}">${year} • ${anime.format || anime.type || 'TV'}</p>
+                            ${isLoggedIn ? `<button onclick="event.stopPropagation(); addToMyList('${title}');" class="w-full bg-primary hover:bg-indigo-600 text-white text-xs py-1.5 px-2 rounded-lg transition-colors">
+                                ➕ Add to List
+                            </button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            if (append) {
+                document.getElementById('anime-grid').innerHTML += html;
+            } else {
+                document.getElementById('anime-grid').innerHTML = html;
+            }
+        }
+
+        async function applyFilters() {
+            if (isFiltering) return;
+            isFiltering = true;
+            
+            const genre = document.getElementById('genre-filter').value;
+            const year = document.getElementById('year-filter').value;
+            const search = document.getElementById('search-input').value.trim();
+            
+            document.getElementById('anime-grid').innerHTML = createSkeleton(12);
+            
+            try {
+                const params = new URLSearchParams();
+                params.append('page', '1');
+                if (genre) params.append('genre', genre);
+                if (year) params.append('year', year);
+                if (search) params.append('search', search);
+                
+                const response = await fetch(`/api/simple/browse?${params.toString()}`);
+                const data = await response.json();
+                
+                if (data.success && data.data && Array.isArray(data.data)) {
+                    const animes = data.data;
+                    console.log(`🔍 Filter results: ${animes.length} anime found`);
+                    
+                    renderAnimeGrid(animes, false);
+                    document.getElementById('load-more-btn').style.display = animes.length >= 50 ? 'block' : 'none';
+                } else {
+                    document.getElementById('anime-grid').innerHTML = '<div class="col-span-full text-center py-20 text-gray-500 dark:text-gray-400">No anime found</div>';
+                }
+            } catch (error) {
+                console.error('Filter error:', error);
+                document.getElementById('anime-grid').innerHTML = '<div class="col-span-full text-center py-20 text-red-500 dark:text-red-400">Search failed. Please try again.</div>';
+            }
+            
+            isFiltering = false;
+        }
+
+        function clearFilters() {
+            document.getElementById('genre-filter').value = '';
+            document.getElementById('year-filter').value = '';
+            document.getElementById('status-filter').value = '';
+            document.getElementById('sort-filter').value = '';
+            document.getElementById('search-input').value = '';
+            currentPage = 1;
+            animeCache.clear();
+            loadBrowseAnime(1);
+            document.getElementById('load-more-btn').style.display = 'block';
+        }
+
+        function loadMore() {
+            currentPage++;
+            loadBrowseAnime(currentPage, true);
+        }
+
+        function showAnimeModal(animeName) {
+            window.open(`/?anime=${animeName}`, '_blank');
+        }
+
+
+        
+        // Load anime on page load
+        function showAnimeModal(animeName) {
+            window.location.href = `/static/anime-detail.html?name=${encodeURIComponent(animeName)}`;
+        }
+        
+        // Refresh cards when auth state changes
+        function refreshAnimeCards() {
+            if (animeCache.size > 0) {
+                const firstPageData = animeCache.get('browse_1');
+                if (firstPageData) {
+                    renderAnimeGrid(firstPageData, false);
+                }
+            }
+        }
+        
+        // Monitor auth state changes
+        let lastAuthState = null;
+        setInterval(() => {
+            const currentAuthState = window.authManager?.isAuthenticated() || false;
+            if (currentAuthState !== lastAuthState) {
+                console.log('🔄 Auth state changed, refreshing cards...');
+                refreshAnimeCards();
+                lastAuthState = currentAuthState;
+            }
+        }, 1000);
+
+        // Create skeleton loading function
+        function createSkeleton(count) {
+            return Array(count).fill(0).map(() => 
+                '<div class="bg-gray-200 dark:bg-gray-700 rounded-xl h-80 animate-pulse"></div>'
+            ).join('');
+        }
+
+        // Add search on enter key
+        document.addEventListener('DOMContentLoaded', () => {
+            const grid = document.getElementById('anime-grid');
+            grid.innerHTML = createSkeleton(12);
+            
+            // Check for URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const genreParam = urlParams.get('genre');
+            const yearParam = urlParams.get('year');
+            
+            // Set filter values from URL
+            if (genreParam) {
+                document.getElementById('genre-filter').value = genreParam;
+            }
+            if (yearParam) {
+                document.getElementById('year-filter').value = yearParam;
+            }
+            
+            // Load anime with filters if any
+            if (genreParam || yearParam) {
+                applyFilters();
+            } else {
+                // Load 50 anime by default
+                loadBrowseAnime(1);
+            }
+            
+            // Search on enter key
+            document.getElementById('search-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyFilters();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

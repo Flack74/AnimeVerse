@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/Flack74/mongoapi/middleware"
-	model "github.com/Flack74/mongoapi/models"
-	"github.com/Flack74/mongoapi/services"
+	"animeverse/middleware"
+	model "animeverse/models"
+	"animeverse/services"
 	"github.com/go-chi/chi/v5"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -130,29 +131,30 @@ func renderAnimeCardsWithLayout(w http.ResponseWriter, animes []primitive.M, lay
 		}
 		
 		fmt.Fprintf(w, `
-		<div class="%s"
-		     onclick="fetch('/api/anime/%s', {headers: {'HX-Request': 'true'}}).then(r => r.text()).then(html => {document.getElementById('modal-content').innerHTML = html; showModal();})">
-		    <div class="aspect-[3/4] bg-gray-700 relative overflow-hidden">
+		<div class="bg-white rounded-2xl shadow-lg overflow-hidden anime-card cursor-pointer"
+		     onclick="showAnimeModal('%s')">
+		    <div class="aspect-[3/4] bg-gray-200 relative overflow-hidden">
 		        <img src="%s" alt="%s" class="w-full h-full object-cover" 
-		             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI2NyIgdmlld0JveD0iMCAwIDIwMCAyNjciIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjY3IiBmaWxsPSIjMzc0MTUxIi8+Cjx0ZXh0IHg9IjEwMCIgeT0iMTMzIiBmaWxsPSIjNkI3MjgwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPg=='">
-		        <div class="absolute top-2 right-2 bg-anime-blue text-white px-2 py-1 rounded text-sm font-bold">
-		            %d/10
-		        </div>
-		        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-		            <h3 class="text-white font-semibold text-sm mb-1 truncate" title="%s">%s</h3>
-		            <p class="text-gray-300 text-xs mb-1">%s • %s</p>
-		            <p class="text-gray-400 text-xs truncate">%s</p>
-		            <p class="text-gray-500 text-xs mt-1">%s</p>
+		             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI2NyIgdmlld0JveD0iMCAwIDIwMCAyNjciIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjY3IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjEwMCIgeT0iMTMzIiBmaWxsPSIjOUI5QkE0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPg=='">
+		        <div class="absolute top-3 right-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-2 py-1 rounded-full text-xs font-bold">
+		            %d★
 		        </div>
 		    </div>
+		    <div class="p-4">
+		        <h3 class="font-bold text-gray-800 text-sm mb-2 truncate" title="%s">%s</h3>
+		        <div class="flex items-center justify-between text-xs text-gray-500">
+		            <span>%s</span>
+		            <span class="bg-gray-100 px-2 py-1 rounded-full">%s</span>
+		        </div>
+		        <p class="text-gray-400 text-xs mt-2 truncate">%s</p>
+		    </div>
 		</div>`, 
-			className,
 			strings.ReplaceAll(strings.ToLower(name), " ", "-"), 
-			imageUrl, name, score, name, name, animeType, status, genreStr, yearSeasonStr)
+			imageUrl, name, score, name, name, animeType, status, genreStr)
 	}
 }
 
-// renderAnimeModal renders detailed anime information for modal
+// renderAnimeModal renders detailed anime information for modal with tabs
 func renderAnimeModal(w http.ResponseWriter, anime *model.Anime) {
 	genreStr := strings.Join(anime.Genre, ", ")
 	if genreStr == "" {
@@ -177,72 +179,163 @@ func renderAnimeModal(w http.ResponseWriter, anime *model.Anime) {
 	}
 	
 	fmt.Fprintf(w, `
-	<div class="flex flex-col md:flex-row gap-6">
-		<div class="flex-shrink-0">
-			<img src="%s" alt="%s" class="w-48 h-64 object-cover rounded-lg" 
-			     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI2NyIgdmlld0JveD0iMCAwIDIwMCAyNjciIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjY3IiBmaWxsPSIjMzc0MTUxIi8+Cjx0ZXh0IHg9IjEwMCIgeT0iMTMzIiBmaWxsPSIjNkI3MjgwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPg=='">
-		</div>
-		<div class="flex-1">
-			<h2 class="text-2xl font-bold text-white mb-4">%s</h2>
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-				<div>
-					<span class="text-gray-400">Type:</span>
-					<span class="text-white ml-2">%s</span>
+	<div class="flex justify-between items-center mb-8">
+		<h1 class="text-4xl font-bold text-gray-800">%s</h1>
+		<button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
+	</div>
+	
+	<!-- Hero Section -->
+	<div class="relative h-64 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl mb-8 overflow-hidden">
+		<img src="%s" alt="%s banner" class="w-full h-full object-cover opacity-30" 
+		     onerror="this.style.display='none'">
+		<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+		<div class="absolute bottom-6 left-6 flex items-end space-x-6">
+			<img src="%s" alt="%s" class="w-32 h-44 object-cover rounded-2xl shadow-2xl" 
+			     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI2NyIgdmlld0JveD0iMCAwIDIwMCAyNjciIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjY3IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjEwMCIgeT0iMTMzIiBmaWxsPSIjOUI5QkE0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPg=='">
+			<div class="text-white">
+				<div class="flex items-center space-x-3 mb-3">
+					<span class="bg-yellow-400 text-black px-3 py-1 rounded-full text-sm font-bold">%d★</span>
+					<span class="bg-white/20 backdrop-blur px-3 py-1 rounded-full text-sm font-medium">16+</span>
+					<span class="bg-white/20 backdrop-blur px-3 py-1 rounded-full text-sm font-medium">%s</span>
+					<span class="bg-white/20 backdrop-blur px-3 py-1 rounded-full text-sm font-medium">23 min</span>
 				</div>
-				<div>
-					<span class="text-gray-400">Score:</span>
-					<span class="text-anime-blue ml-2 font-bold">%d/10</span>
-				</div>
-				<div>
-					<span class="text-gray-400">Status:</span>
-					<span class="text-white ml-2 capitalize">%s</span>
-				</div>
-				<div>
-					<span class="text-gray-400">Progress:</span>
-					<span class="text-white ml-2">%s</span>
-				</div>
-				<div class="md:col-span-2">
-					<span class="text-gray-400">Genres:</span>
-					<span class="text-white ml-2">%s</span>
-				</div>
-				<div class="md:col-span-2">
-					<span class="text-gray-400">Year/Season:</span>
-					<span class="text-white ml-2">%s</span>
-				</div>
-			</div>
-			<div class="mt-6">
-				<h3 class="text-lg font-semibold text-white mb-2">Synopsis</h3>
-				<p class="text-gray-300 leading-relaxed">%s</p>
-			</div>
-			<div class="mt-6">
-				<h4 class="text-white font-semibold mb-3">Add to List:</h4>
-				<div class="flex flex-wrap gap-2 mb-4">
-					<button class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm transition-colors" onclick="addAnimeToList('%s', 'watching')">Watching</button>
-					<button class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm transition-colors" onclick="addAnimeToList('%s', 'completed')">Completed</button>
-					<button class="bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-sm transition-colors" onclick="addAnimeToList('%s', 'plan-to-watch')">Plan to Watch</button>
-					<button class="bg-orange-600 hover:bg-orange-700 px-3 py-1 rounded text-sm transition-colors" onclick="addAnimeToList('%s', 'on-hold')">On Hold</button>
-					<button class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors" onclick="addAnimeToList('%s', 'dropped')">Dropped</button>
-				</div>
-				<div class="flex gap-3">
-					<button class="bg-anime-blue hover:bg-blue-600 px-4 py-2 rounded-lg transition-colors"
-					        hx-post="/api/admin/anime/%s/episode/increment" 
-					        hx-target="#modal-content" 
-					        hx-swap="outerHTML">
-						+ Episode
-					</button>
-					<button class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg transition-colors"
-					        hx-post="/api/admin/anime/%s/episode/decrement" 
-					        hx-target="#modal-content" 
-					        hx-swap="outerHTML">
-						- Episode
-					</button>
+				<div class="flex flex-wrap gap-2">
+					<span class="bg-indigo-500 px-2 py-1 rounded text-xs">Action</span>
+					<span class="bg-purple-500 px-2 py-1 rounded text-xs">Demons</span>
+					<span class="bg-pink-500 px-2 py-1 rounded text-xs">Shounen</span>
 				</div>
 			</div>
 		</div>
-	</div>`,
-		anime.ImageUrl, anime.Name, anime.Name, anime.Type, anime.Score, 
-		anime.Status, progressText, genreStr, yearSeason, anime.Notes,
+	</div>
+	
+	<!-- Tabs -->
+	<div class="border-b border-gray-200 mb-8">
+		<nav class="flex space-x-8">
+			<button class="tab-btn active py-3 px-1 border-b-2 border-primary text-primary font-semibold" 
+			        onclick="showTab('overview')">Overview</button>
+			<button class="tab-btn py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium" 
+			        onclick="showTab('episodes')">Episodes</button>
+			<button class="tab-btn py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium" 
+			        onclick="showTab('comments')">Comments</button>
+		</nav>
+	</div>
+	
+	<!-- Tab Content -->
+	<div id="tab-content">
+		<!-- Overview Tab -->
+		<div id="overview-tab" class="tab-content">
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+				<div class="space-y-4">
+					<div class="flex justify-between"><span class="text-gray-500 font-medium">Type:</span> <span class="text-gray-800 font-semibold">%s</span></div>
+					<div class="flex justify-between"><span class="text-gray-500 font-medium">Status:</span> <span class="text-gray-800 font-semibold capitalize">%s</span></div>
+					<div class="flex justify-between"><span class="text-gray-500 font-medium">Episodes:</span> <span class="text-gray-800 font-semibold">%s</span></div>
+				</div>
+				<div class="space-y-4">
+					<div class="flex justify-between"><span class="text-gray-500 font-medium">Year:</span> <span class="text-gray-800 font-semibold">%s</span></div>
+					<div class="flex justify-between"><span class="text-gray-500 font-medium">Genres:</span> <span class="text-gray-800 font-semibold">%s</span></div>
+				</div>
+			</div>
+			<div class="mb-8">
+				<h3 class="text-2xl font-bold text-gray-800 mb-4">Synopsis</h3>
+				<p class="text-gray-600 leading-relaxed text-lg">%s</p>
+			</div>
+			<div id="anime-actions" class="flex flex-wrap gap-3">
+				<!-- Actions will be populated by JavaScript based on auth status -->
+			</div>
+			<script>
+				// Populate actions based on auth status
+				const actionsDiv = document.getElementById('anime-actions');
+				const isLoggedIn = localStorage.getItem('auth_token');
+				
+				if (isLoggedIn) {
+					actionsDiv.innerHTML = '<button class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-all" onclick="addAnimeToList(\'%s\', \'watching\')">Add to Watching</button>' +
+						'<button class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition-all" onclick="addAnimeToList(\'%s\', \'completed\')">Mark Completed</button>' +
+						'<button class="bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white px-6 py-3 rounded-xl font-semibold transition-all" onclick="addAnimeToList(\'%s\', \'plan-to-watch\')">Plan to Watch</button>' +
+						'<button class="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-6 py-3 rounded-xl font-semibold transition-all" onclick="addAnimeToList(\'%s\', \'on-hold\')">On Hold</button>' +
+						'<button class="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-semibold transition-all" onclick="addAnimeToList(\'%s\', \'dropped\')">Dropped</button>';
+				} else {
+					actionsDiv.innerHTML = '<button class="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition-all" onclick="watchTrailer()">Watch Trailer</button>' +
+						'<button class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-6 py-3 rounded-xl font-semibold transition-all" onclick="signIn()">Sign In to Add to List</button>';
+				}
+				
+				function watchTrailer() {
+					alert('Trailer functionality coming soon!');
+				}
+			</script>
+		</div>
+		
+		<!-- Episodes Tab -->
+		<div id="episodes-tab" class="tab-content hidden">
+			<div class="mb-4">
+				<button class="bg-anime-blue hover:bg-blue-600 px-4 py-2 rounded-lg mr-2" onclick="loadEpisodes('%s', 1)">Season 1</button>
+				<button class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg" onclick="loadEpisodes('%s', 2)">Season 2</button>
+			</div>
+			<div id="episode-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				<!-- Episodes will be loaded here -->
+				<div class="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 cursor-pointer" onclick="playEpisode(1)">
+					<div class="flex items-center space-x-3">
+						<div class="w-16 h-12 bg-gray-600 rounded flex items-center justify-center">
+							<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+								<path d="M8 5v10l8-5-8-5z"/>
+							</svg>
+						</div>
+						<div>
+							<h4 class="text-white font-medium">Episode 1</h4>
+							<p class="text-gray-400 text-sm">24 min</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<!-- Comments Tab -->
+		<div id="comments-tab" class="tab-content hidden">
+			<form class="mb-6" hx-post="/api/anime/%s/comments" hx-target="#comments-list" hx-swap="afterbegin">
+				<textarea name="content" placeholder="Write a comment..." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 resize-none" rows="3"></textarea>
+				<div class="flex justify-between items-center mt-2">
+					<label class="flex items-center text-gray-400">
+						<input type="checkbox" name="spoiler" class="mr-2"> Contains spoilers
+					</label>
+					<button type="submit" class="bg-anime-blue hover:bg-blue-600 px-4 py-2 rounded-lg transition-colors">Post Comment</button>
+				</div>
+			</form>
+			<div id="comments-list" hx-get="/api/anime/%s/comments" hx-trigger="load">
+				<!-- Comments will be loaded here -->
+			</div>
+		</div>
+	</div>
+	
+	<script>
+		function showTab(tabName) {
+			// Hide all tabs
+			document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+			document.querySelectorAll('.tab-btn').forEach(btn => {
+				btn.classList.remove('border-anime-blue', 'text-anime-blue');
+				btn.classList.add('border-transparent', 'text-gray-400');
+			});
+			
+			// Show selected tab
+			document.getElementById(tabName + '-tab').classList.remove('hidden');
+			event.target.classList.remove('border-transparent', 'text-gray-400');
+			event.target.classList.add('border-anime-blue', 'text-anime-blue');
+		}
+		
+		function loadEpisodes(animeId, season) {
+			// Mock episode loading
+			console.log('Loading episodes for anime:', animeId, 'season:', season);
+		}
+		
+		function playEpisode(episodeNumber) {
+			document.getElementById('episode-title').textContent = 'Episode ' + episodeNumber;
+			document.getElementById('video-player').innerHTML = '<div class="flex items-center justify-center h-full text-white"><p>Video player would load here</p></div>';
+			showPlayer();
+		}
+	</script>`,
+		anime.Name, anime.BannerUrl, anime.Name, anime.ImageUrl, anime.Name, 
+		anime.Score, anime.Type, yearSeason, progressText,
+		anime.Type, anime.Status, progressText, yearSeason, genreStr, anime.Notes,
 		anime.Name, anime.Name, anime.Name, anime.Name, anime.Name,
+		anime.ID.Hex(), anime.ID.Hex(),
 		anime.ID.Hex(), anime.ID.Hex())
 }
 
@@ -470,6 +563,11 @@ func GetPopularAnimesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ServeFrontendHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	http.ServeFile(w, r, "./static/index.html")
+}
+
+func ServeOldFrontendHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.Write([]byte(`<!DOCTYPE html>
 <html lang="en" class="dark">
@@ -904,6 +1002,108 @@ func BackfillDataHandler(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, true, fmt.Sprintf("Backfilled %d anime records", count), nil, "")
 }
 
+func BulkImportHandler(w http.ResponseWriter, r *http.Request) {
+	count, err := services.BulkImportAnimeDatabase()
+	if err != nil {
+		sendJSONResponse(w, http.StatusInternalServerError, false, "", nil, "Failed to bulk import: "+err.Error())
+		return
+	}
+	sendJSONResponse(w, http.StatusOK, true, fmt.Sprintf("Successfully imported %d anime from database", count), nil, "")
+}
+
+func UpdateCurrentSeasonHandler(w http.ResponseWriter, r *http.Request) {
+	count, err := services.UpdateCurrentSeasonAnime()
+	if err != nil {
+		sendJSONResponse(w, http.StatusInternalServerError, false, "", nil, "Failed to update current season: "+err.Error())
+		return
+	}
+	sendJSONResponse(w, http.StatusOK, true, fmt.Sprintf("Updated %d current season anime", count), nil, "")
+}
+
+func SearchAnimesHandler(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		sendJSONResponse(w, http.StatusBadRequest, false, "", nil, "Search query is required")
+		return
+	}
+	
+	searchResults := services.SearchAnimes(query)
+	if searchResults == nil {
+		sendJSONResponse(w, http.StatusInternalServerError, false, "", nil, "Failed to search animes")
+		return
+	}
+	
+	// Check if request wants HTML (HTMX)
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("Content-Type", "text/html")
+		renderSearchResults(w, searchResults)
+		return
+	}
+	
+	sendJSONResponse(w, http.StatusOK, true, "Search results retrieved successfully", searchResults, "")
+}
+
+// renderSearchResults renders search results as cards
+func renderSearchResults(w http.ResponseWriter, animes []primitive.M) {
+	if len(animes) == 0 {
+		fmt.Fprintf(w, `<div class="col-span-full text-center py-12 text-gray-500">
+			<p class="text-xl mb-2">😢 No anime found</p>
+			<p>Try a different search term</p>
+		</div>`)
+		return
+	}
+	
+	for _, anime := range animes {
+		name := ""
+		imageUrl := "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI2NyIgdmlld0JveD0iMCAwIDIwMCAyNjciIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjY3IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjEwMCIgeT0iMTMzIiBmaWxsPSIjOUI5QkE0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPg=="
+		score := 0
+		year := 0
+		episodes := "N/A"
+		
+		if n, ok := anime["name"].(string); ok {
+			name = n
+		}
+		if img, ok := anime["imageUrl"].(string); ok && img != "" {
+			imageUrl = img
+		}
+		if s, ok := anime["score"].(int32); ok {
+			score = int(s)
+		} else if s, ok := anime["score"].(int); ok {
+			score = s
+		}
+		if y, ok := anime["year"].(int32); ok {
+			year = int(y)
+		} else if y, ok := anime["year"].(int); ok {
+			year = y
+		}
+		if prog, ok := anime["progress"].(primitive.M); ok {
+			if total, ok := prog["total"].(int32); ok && total > 0 {
+				episodes = fmt.Sprintf("%d Episodes", total)
+			}
+		}
+		
+		fmt.Fprintf(w, `
+		<div class="bg-white rounded-2xl shadow-lg overflow-hidden anime-card cursor-pointer"
+		     onclick="closeModal(); setTimeout(() => showAnimeModal('%s'), 100);">
+		    <div class="aspect-[3/4] bg-gray-200 relative overflow-hidden">
+		        <img src="%s" alt="%s" class="w-full h-full object-cover">
+		        <div class="absolute top-3 right-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-2 py-1 rounded-full text-xs font-bold">
+		            %d★
+		        </div>
+		    </div>
+		    <div class="p-4">
+		        <h3 class="font-bold text-gray-800 text-sm mb-2 truncate" title="%s">%s</h3>
+		        <div class="flex items-center justify-between text-xs text-gray-500">
+		            <span>%d</span>
+		            <span class="bg-gray-100 px-2 py-1 rounded-full">%s</span>
+		        </div>
+		    </div>
+		</div>`, 
+			strings.ReplaceAll(strings.ToLower(name), " ", "-"), 
+			imageUrl, name, score, name, name, year, episodes)
+	}
+}
+
 func GetCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("user")
 	if user == nil {
@@ -1043,4 +1243,190 @@ func ServeHomeHandler(w http.ResponseWriter, r *http.Request) {
 		</body>
 		</html>
 	`))
+}
+
+// Image caching handlers
+func CheckImagesHandler(w http.ResponseWriter, r *http.Request) {
+	malIDStr := r.URL.Query().Get("mal_id")
+	anilistIDStr := r.URL.Query().Get("anilist_id")
+	
+	malID := 0
+	anilistID := 0
+	
+	if malIDStr != "" {
+		if id, err := strconv.Atoi(malIDStr); err == nil {
+			malID = id
+		}
+	}
+	
+	if anilistIDStr != "" {
+		if id, err := strconv.Atoi(anilistIDStr); err == nil {
+			anilistID = id
+		}
+	}
+	
+	images := services.GetImagesByIDs(malID, anilistID)
+	if images != nil {
+		sendJSONResponse(w, http.StatusOK, true, "Images found", images, "")
+	} else {
+		sendJSONResponse(w, http.StatusNotFound, false, "Images not found", nil, "")
+	}
+}
+
+func SaveImagesHandler(w http.ResponseWriter, r *http.Request) {
+	var req model.ImageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		sendJSONResponse(w, http.StatusBadRequest, false, "", nil, "Invalid request body")
+		return
+	}
+	
+	if err := services.SaveImageData(req); err != nil {
+		sendJSONResponse(w, http.StatusInternalServerError, false, "", nil, "Failed to save images")
+		return
+	}
+	
+	sendJSONResponse(w, http.StatusOK, true, "Images saved successfully", nil, "")
+}
+
+func GetRandomAnimeHandler(w http.ResponseWriter, r *http.Request) {
+	randomAnime := services.GetRandomAnime()
+	if randomAnime == nil {
+		sendJSONResponse(w, http.StatusNotFound, false, "", nil, "No anime found")
+		return
+	}
+	
+	sendJSONResponse(w, http.StatusOK, true, "Random anime retrieved", randomAnime, "")
+}
+
+func GetTop2025AnimesHandler(w http.ResponseWriter, r *http.Request) {
+	top2025Animes := services.GetTop2025Animes()
+	if top2025Animes == nil {
+		sendJSONResponse(w, http.StatusInternalServerError, false, "", nil, "Failed to fetch top 2025 animes")
+		return
+	}
+	
+	// Check if request wants HTML (HTMX)
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("Content-Type", "text/html")
+		renderHeroCards(w, top2025Animes)
+		return
+	}
+	
+	sendJSONResponse(w, http.StatusOK, true, "Top 2025 animes retrieved successfully", top2025Animes, "")
+}
+
+func GetPreviewAnimesHandler(w http.ResponseWriter, r *http.Request) {
+	previewAnimes := services.GetPreviewAnimes()
+	if previewAnimes == nil {
+		sendJSONResponse(w, http.StatusInternalServerError, false, "", nil, "Failed to fetch preview animes")
+		return
+	}
+	
+	// Check if request wants HTML (HTMX)
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("Content-Type", "text/html")
+		renderAnimeCards(w, previewAnimes)
+		return
+	}
+	
+	sendJSONResponse(w, http.StatusOK, true, "Preview animes retrieved successfully", previewAnimes, "")
+}
+
+// renderHeroCards renders anime cards for hero section
+func renderHeroCards(w http.ResponseWriter, animes []primitive.M) {
+	if len(animes) == 0 {
+		fmt.Fprintf(w, `<div class="flex-none w-48 bg-white/10 backdrop-blur rounded-2xl p-4">
+			<div class="aspect-[3/4] bg-white/20 rounded-xl mb-3 flex items-center justify-center">
+				<span class="text-white/50 text-sm">No anime found</span>
+			</div>
+		</div>`)
+		return
+	}
+	
+	for _, anime := range animes {
+		name := ""
+		imageUrl := "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI2NyIgdmlld0JveD0iMCAwIDIwMCAyNjciIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjY3IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjEwMCIgeT0iMTMzIiBmaWxsPSIjOUI5QkE0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPg=="
+		episodes := "N/A"
+		
+		if n, ok := anime["name"].(string); ok {
+			name = n
+		}
+		if img, ok := anime["imageUrl"].(string); ok && img != "" {
+			imageUrl = img
+		}
+		if prog, ok := anime["progress"].(primitive.M); ok {
+			if total, ok := prog["total"].(int32); ok && total > 0 {
+				episodes = fmt.Sprintf("%d Episodes", total)
+			}
+		}
+		
+		fmt.Fprintf(w, `
+		<div class="flex-none w-48 bg-white/10 backdrop-blur rounded-2xl p-4 hover:bg-white/20 transition-all cursor-pointer"
+		     onclick="showAnimeModal('%s')">
+		    <div class="aspect-[3/4] bg-white/20 rounded-xl mb-3 overflow-hidden">
+		        <img src="%s" alt="%s" class="w-full h-full object-cover">
+		    </div>
+		    <h3 class="font-bold text-sm mb-1 text-white truncate">%s</h3>
+		    <p class="text-white/70 text-xs">%s</p>
+		</div>`, 
+			strings.ReplaceAll(strings.ToLower(name), " ", "-"), 
+			imageUrl, name, name, episodes)
+	}
+}
+
+func GetScheduleHandler(w http.ResponseWriter, r *http.Request) {
+	day := r.URL.Query().Get("day")
+	if day == "" {
+		day = time.Now().Weekday().String()
+	}
+	
+	schedule := services.GetDailySchedule(day)
+	
+	// Check if request wants HTML (HTMX)
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("Content-Type", "text/html")
+		renderSchedule(w, schedule)
+		return
+	}
+	
+	sendJSONResponse(w, http.StatusOK, true, "Schedule retrieved", schedule, "")
+}
+
+func renderSchedule(w http.ResponseWriter, schedule []map[string]interface{}) {
+	if len(schedule) == 0 {
+		fmt.Fprintf(w, `<div class="text-center py-8 text-gray-500">
+			<p>No scheduled anime for today</p>
+		</div>`)
+		return
+	}
+	
+	for _, item := range schedule {
+		name := ""
+		time := ""
+		episode := ""
+		
+		if n, ok := item["name"].(string); ok {
+			name = n
+		}
+		if t, ok := item["time"].(string); ok {
+			time = t
+		}
+		if e, ok := item["episode"].(string); ok {
+			episode = e
+		}
+		
+		fmt.Fprintf(w, `
+		<div class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer border-l-4 border-primary"
+		     onclick="showAnimeModal('%s')">
+		    <div class="flex-1">
+		        <h3 class="font-semibold text-gray-800 mb-1">%s</h3>
+		        <p class="text-gray-500 text-sm">%s</p>
+		    </div>
+		    <div class="text-right">
+		        <span class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-3 py-1 rounded-full text-sm font-medium">%s</span>
+		    </div>
+		</div>`,
+			strings.ReplaceAll(strings.ToLower(name), " ", "-"),
+			name, episode, time)
+	}
 }

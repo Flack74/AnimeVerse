@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	model "github.com/Flack74/mongoapi/models"
+	model "animeverse/models"
 )
 
 func SmartSearch(search, genre, year, season, format, status, userID string) []primitive.M {

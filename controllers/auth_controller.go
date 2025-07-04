@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/Flack74/mongoapi/services"
+	"animeverse/services"
 )
 
 type AuthRequest struct {

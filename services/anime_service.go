@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/Flack74/mongoapi/config"
-	model "github.com/Flack74/mongoapi/models"
+	"animeverse/config"
+	model "animeverse/models"
 	"github.com/go-chi/chi/v5"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -305,4 +306,194 @@ func GetPopularAnimes() []primitive.M {
 		animes = append(animes, anime)
 	}
 	return animes
+}
+
+// GetRandomAnime returns a random anime
+func GetRandomAnime() *model.Anime {
+	count, err := config.Collection.CountDocuments(context.Background(), bson.M{})
+	if err != nil || count == 0 {
+		return nil
+	}
+	
+	randomIndex := rand.Int63n(count)
+	opts := options.FindOne().SetSkip(randomIndex)
+	
+	var anime model.Anime
+	err = config.Collection.FindOne(context.Background(), bson.M{}, opts).Decode(&anime)
+	if err != nil {
+		return nil
+	}
+	
+	return &anime
+}
+
+// GetDailySchedule returns scheduled anime for a given day
+func GetDailySchedule(day string) []map[string]interface{} {
+	// Mock schedule data - in real implementation, this would come from a schedule collection
+	schedules := map[string][]map[string]interface{}{
+		"Monday": {
+			{"name": "Attack on Titan", "time": "15:45", "episode": "Episode 12"},
+			{"name": "Demon Slayer", "time": "16:30", "episode": "Episode 8"},
+			{"name": "One Piece", "time": "17:00", "episode": "Episode 1045"},
+		},
+		"Tuesday": {
+			{"name": "Jujutsu Kaisen", "time": "15:30", "episode": "Episode 15"},
+			{"name": "My Hero Academia", "time": "16:00", "episode": "Episode 22"},
+		},
+		"Wednesday": {
+			{"name": "Chainsaw Man", "time": "15:45", "episode": "Episode 9"},
+			{"name": "Spy x Family", "time": "16:15", "episode": "Episode 11"},
+		},
+		"Thursday": {
+			{"name": "Tokyo Revengers", "time": "15:30", "episode": "Episode 18"},
+			{"name": "Blue Lock", "time": "16:45", "episode": "Episode 14"},
+		},
+		"Friday": {
+			{"name": "Mob Psycho 100", "time": "15:00", "episode": "Episode 7"},
+			{"name": "One Punch Man", "time": "16:30", "episode": "Episode 5"},
+		},
+		"Saturday": {
+			{"name": "Dragon Ball Super", "time": "14:00", "episode": "Episode 131"},
+			{"name": "Naruto Shippuden", "time": "15:30", "episode": "Episode 720"},
+		},
+		"Sunday": {
+			{"name": "Bleach", "time": "14:30", "episode": "Episode 366"},
+			{"name": "Hunter x Hunter", "time": "16:00", "episode": "Episode 148"},
+		},
+	}
+	
+	if schedule, exists := schedules[day]; exists {
+		return schedule
+	}
+	
+	return []map[string]interface{}{}
+}
+
+// GetTop2025Animes returns top rated anime from 2024-2025
+func GetTop2025Animes() []primitive.M {
+	// Multi-stage approach for best results
+	filters := []bson.M{
+		// Stage 1: 2024-2025 high rated
+		{"$and": []bson.M{{"year": bson.M{"$gte": 2024}}, {"score": bson.M{"$gte": 8}}}},
+		// Stage 2: 2023-2024 very high rated
+		{"$and": []bson.M{{"year": bson.M{"$gte": 2023}}, {"score": bson.M{"$gte": 9}}}},
+		// Stage 3: Any high rated with images
+		{"$and": []bson.M{{"score": bson.M{"$gte": 8}}, {"imageUrl": bson.M{"$ne": ""}}}},
+		// Stage 4: Popular genres
+		{"$and": []bson.M{{"score": bson.M{"$gte": 7}}, {"genre": bson.M{"$in": []string{"Action", "Adventure", "Fantasy", "Shounen"}}}}},
+	}
+	
+	var animes []primitive.M
+	seenNames := make(map[string]bool)
+	
+	for _, filter := range filters {
+		if len(animes) >= 5 {
+			break
+		}
+		
+		opts := options.Find().SetSort(bson.D{{"score", -1}, {"year", -1}}).SetLimit(10)
+		cur, err := config.Collection.Find(context.Background(), filter, opts)
+		if err != nil {
+			continue
+		}
+		
+		for cur.Next(context.Background()) && len(animes) < 5 {
+			var anime bson.M
+			if err := cur.Decode(&anime); err != nil {
+				continue
+			}
+			
+			name, ok := anime["name"].(string)
+			if !ok || seenNames[name] {
+				continue
+			}
+			
+			seenNames[name] = true
+			animes = append(animes, anime)
+		}
+		cur.Close(context.Background())
+	}
+	
+	log.Printf("GetTop2025Animes: Found %d anime", len(animes))
+	return animes
+}
+
+// GetPreviewAnimes returns a preview of anime for the main page
+func GetPreviewAnimes() []primitive.M {
+	// Get diverse mix of anime
+	pipeline := []bson.M{
+		{"$match": bson.M{"score": bson.M{"$gte": 6}}},
+		{"$sort": bson.M{"score": -1, "year": -1}},
+		{"$limit": 12},
+	}
+	
+	cur, err := config.Collection.Aggregate(context.Background(), pipeline)
+	if err != nil {
+		log.Println("Error fetching preview animes:", err)
+		// Fallback to simple query
+		return GetAllAnimes()[:12]
+	}
+	defer cur.Close(context.Background())
+
+	var animes []primitive.M
+	for cur.Next(context.Background()) {
+		var anime bson.M
+		if err := cur.Decode(&anime); err != nil {
+			log.Println("Error decoding anime:", err)
+			continue
+		}
+		animes = append(animes, anime)
+	}
+	
+	log.Printf("GetPreviewAnimes: Found %d anime", len(animes))
+	return animes
+}
+
+// SearchAnimes searches for anime by name with fuzzy matching
+func SearchAnimes(query string) []primitive.M {
+	// Multi-stage search for better results
+	filters := []bson.M{
+		// Exact match
+		{"name": bson.M{"$regex": "^" + query + "$", "$options": "i"}},
+		// Starts with
+		{"name": bson.M{"$regex": "^" + query, "$options": "i"}},
+		// Contains
+		{"name": bson.M{"$regex": query, "$options": "i"}},
+		// Synonyms/notes search
+		{"notes": bson.M{"$regex": query, "$options": "i"}},
+	}
+	
+	var allResults []primitive.M
+	seenNames := make(map[string]bool)
+	
+	for _, filter := range filters {
+		if len(allResults) >= 20 { // Limit total results
+			break
+		}
+		
+		opts := options.Find().SetSort(bson.D{{"score", -1}}).SetLimit(10)
+		cur, err := config.Collection.Find(context.Background(), filter, opts)
+		if err != nil {
+			continue
+		}
+		
+		for cur.Next(context.Background()) && len(allResults) < 20 {
+			var anime bson.M
+			if err := cur.Decode(&anime); err != nil {
+				continue
+			}
+			
+			name, ok := anime["name"].(string)
+			if !ok || seenNames[name] {
+				continue
+			}
+			
+			seenNames[name] = true
+			allResults = append(allResults, anime)
+		}
+		cur.Close(context.Background())
+	}
+	
+	log.Printf("SearchAnimes: Found %d results for query '%s'", len(allResults), query)
+	return allResults
 }
