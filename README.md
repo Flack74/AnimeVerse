@@ -12,6 +12,26 @@
 
 ---
 
+## 📸 Screenshots
+
+### Home Page
+<img width="1860" height="859" alt="image" src="https://github.com/user-attachments/assets/9269e26e-e9ae-451b-9ea4-63e1bc4bfae8" />
+
+### Browse Anime
+<img width="1854" height="859" alt="image" src="https://github.com/user-attachments/assets/438bca15-3380-4648-9c3f-c5e0eab728fc" />
+
+### Anime Details
+<img width="1858" height="850" alt="image" src="https://github.com/user-attachments/assets/1607a8e5-9e6f-492e-95c1-7e9eef041c4c" />
+
+### User Profile
+<img width="1872" height="858" alt="image" src="https://github.com/user-attachments/assets/8982a170-4475-460b-8eb2-fe98e61ff81b" />
+
+### Trending Anime
+<img width="1830" height="855" alt="image" src="https://github.com/user-attachments/assets/2912fd9a-7e0d-488f-8678-abb37bb96f01" />
+
+### Schedule
+<img width="1842" height="796" alt="image" src="https://github.com/user-attachments/assets/9c7b914a-f7e0-4cf5-85b6-5a0ad03635c9" />
+
 ## 🚀 Features
 
 ### 🌐 **Complete Anime Platform**
